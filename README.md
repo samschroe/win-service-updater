@@ -3,7 +3,7 @@
 ![](https://github.com/huntresslabs/win-service-updater/workflows/Build/badge.svg)
 ![](https://github.com/huntresslabs/win-service-updater/workflows/Test/badge.svg)
 
-Partial implementation of "core" wyUpdate functionality. This updater is written in GoLang to avoid .NET dependencies.
+Implementation of "core" wyUpdate functionality. This updater is written in GoLang to avoid .NET dependencies.
 
 ## Goals
 
