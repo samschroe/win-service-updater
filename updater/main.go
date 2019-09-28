@@ -163,10 +163,11 @@ func UpdateHandler(infoer Infoer, args Args) (int, error) {
 			_ = StartService(svc)
 		}
 		return EXIT_ERROR, err
-	} else {
-		UpdateWYCWithNewVersionNumber(iuc, args.Cdata, wys.VersionToUpdate)
-		return EXIT_SUCCESS, nil
 	}
+
+	// we haven't erred, write latest version number and exit
+	UpdateWYCWithNewVersionNumber(iuc, args.Cdata, wys.VersionToUpdate)
+	return EXIT_SUCCESS, nil
 }
 
 // CheckForUpdateHandler checks to see if an update is availible. Returns int
