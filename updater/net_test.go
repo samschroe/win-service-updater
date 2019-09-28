@@ -13,6 +13,12 @@ import (
 func TestNet_DownloadFile_Success(t *testing.T) {
 	wysFile := "../test_files/widgetX.1.0.1.wys"
 
+	// first URL fails, second succeeds
+	server1 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+	}))
+	defer server1.Close()
+
 	server2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		dat, err := ioutil.ReadFile(wysFile)
@@ -22,7 +28,7 @@ func TestNet_DownloadFile_Success(t *testing.T) {
 	defer server2.Close()
 
 	f := SetupTmpLog()
-	err := DownloadFile([]string{server2.URL}, f.Name())
+	err := DownloadFile([]string{server1.URL, server2.URL}, f.Name())
 	assert.Nil(t, err)
 
 	origHash, err := Sha256Hash(wysFile)
