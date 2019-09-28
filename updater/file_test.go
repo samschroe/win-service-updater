@@ -1,8 +1,6 @@
 package updater
 
 import (
-	"io/ioutil"
-	"log"
 	"os"
 	"testing"
 
@@ -10,14 +8,12 @@ import (
 )
 
 func TestFile_Unzip(t *testing.T) {
-	out, err := ioutil.TempDir("", "prefix")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer os.RemoveAll(out)
+	tempDir, err := CreateTempDir()
+	assert.Nil(t, err)
+	defer os.RemoveAll(tempDir)
 
 	zipFile := "../test_files/test.zip"
-	_, files, err := Unzip(zipFile, out)
+	_, files, err := Unzip(zipFile, tempDir)
 	assert.Nil(t, err)
 	// there are 4 files in the test.zip
 	assert.Equal(t, 4, len(files))

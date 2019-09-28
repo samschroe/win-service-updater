@@ -29,31 +29,24 @@ func GetTempDir() (tmpDir string) {
 	return tmpDir
 }
 
-func Sha256Hash(filePath string) (string, error) {
-	//Initialize variable returnMD5String now in case an error has to be returned
+func GetSHA256(filePath string) (string, error) {
 	var sum string
 
-	//Open the passed argument and check for any error
 	file, err := os.Open(filePath)
-	if err != nil {
+	if nil != err {
 		return sum, err
 	}
-
-	//Tell the program to call the following function when the current function returns
 	defer file.Close()
 
-	//Open a new hash interface to write to
 	hash := sha256.New()
 
-	//Copy the file in the hash interface and check for any error
-	if _, err := io.Copy(hash, file); err != nil {
+	// Copy the file into the hash interface
+	_, err = io.Copy(hash, file)
+	if nil != err {
 		return sum, err
 	}
 
-	//Get the 16 bytes hash
-	hashInBytes := hash.Sum(nil)[:16]
-
-	//Convert the bytes to a string
-	sum = hex.EncodeToString(hashInBytes)
+	// Convert bytes to string
+	sum = hex.EncodeToString(hash.Sum(nil)[:16])
 	return sum, nil
 }

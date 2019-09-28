@@ -1,6 +1,7 @@
 package updater
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -8,6 +9,8 @@ import (
 
 func TestAdler32(t *testing.T) {
 	f := GenerateTempFile()
+	defer os.Remove(f)
+
 	adler32, err := GetAdler32(f)
 	assert.Nil(t, err)
 

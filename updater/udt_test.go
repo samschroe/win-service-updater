@@ -21,10 +21,10 @@ func TestUDT(t *testing.T) {
 	err = WriteUDT(udt, tmpfile)
 	assert.Nil(t, err)
 
-	origHash, err := Sha256Hash(orig)
+	origHash, err := GetSHA256(orig)
 	assert.Nil(t, err)
 
-	newHash, err := Sha256Hash(tmpfile)
+	newHash, err := GetSHA256(tmpfile)
 	assert.Nil(t, err)
 	assert.Equal(t, origHash, newHash)
 }

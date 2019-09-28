@@ -31,10 +31,10 @@ func TestNet_DownloadFile_Success(t *testing.T) {
 	err := DownloadFile([]string{server1.URL, server2.URL}, f.Name())
 	assert.Nil(t, err)
 
-	origHash, err := Sha256Hash(wysFile)
+	origHash, err := GetSHA256(wysFile)
 	assert.Nil(t, err)
 
-	newHash, err := Sha256Hash(f.Name())
+	newHash, err := GetSHA256(f.Name())
 	assert.Nil(t, err)
 	assert.Equal(t, origHash, newHash)
 }

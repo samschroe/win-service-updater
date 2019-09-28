@@ -105,7 +105,7 @@ func TestWYC_WriteIUC(t *testing.T) {
 	tmpDir := GetTempDir()
 	defer os.RemoveAll(tmpDir)
 
-	newHash, err := Sha256Hash(tmpIUC)
+	newHash, err := GetSHA256(tmpIUC)
 	assert.Nil(t, err)
 
 	found := false
@@ -113,7 +113,7 @@ func TestWYC_WriteIUC(t *testing.T) {
 	for _, f := range files {
 		// fmt.Println(f)
 		if filepath.Base(f) == IUCLIENT_IUC {
-			origHash, err := Sha256Hash(f)
+			origHash, err := GetSHA256(f)
 			assert.Nil(t, err)
 			assert.Equal(t, origHash, newHash)
 			found = true
