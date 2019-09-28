@@ -58,7 +58,7 @@ func TearDown(f string) {
 	}
 }
 
-func TestUpdateHandler(t *testing.T) {
+func TestHandler_UpdateHandler(t *testing.T) {
 	wycFile := "../test_files/client.1.0.1.wyc"
 	wysFile := "../test_files/widgetX.1.0.1.wys"
 	wyuFile := "../test_files/widgetX.1.0.1.wyu"
@@ -99,7 +99,7 @@ func TestUpdateHandler(t *testing.T) {
 	assert.True(t, fileExists(args.OutputinfoLog))
 }
 
-func TestUpdateHandler_InvalidWYC(t *testing.T) {
+func TestHandler_UpdateHandler_InvalidWYC(t *testing.T) {
 	wycFile := "../test_files/foo.wyc"
 	wysFile := "../test_files/widgetX.1.0.1.wys"
 	wyuFile := "../test_files/widgetX.1.0.1.wyu"
@@ -140,7 +140,7 @@ func TestUpdateHandler_InvalidWYC(t *testing.T) {
 	assert.True(t, fileExists(args.OutputinfoLog))
 }
 
-func TestUpdateHandler_DownloadWYS_error(t *testing.T) {
+func TestHandler_UpdateHandler_download_WYS_error(t *testing.T) {
 	wycFile := "../test_files/client.1.0.1.wyc"
 	wysFile := "../test_files/widgetX.1.0.1.wys"
 	wyuFile := "../test_files/widgetX.1.0.1.wyu"
@@ -178,7 +178,7 @@ func TestUpdateHandler_DownloadWYS_error(t *testing.T) {
 	assert.Contains(t, err.Error(), "Error downloading")
 }
 
-func TestUpdateHandler_InvalidWYS_error(t *testing.T) {
+func TestHandler_UpdateHandler_invalid_WYS_error(t *testing.T) {
 	wycFile := "../test_files/client.1.0.1.wyc"
 	// wysFile := "../test_files/widgetX.1.0.1.wys"
 	wyuFile := "../test_files/widgetX.1.0.1.wyu"
@@ -212,7 +212,7 @@ func TestUpdateHandler_InvalidWYS_error(t *testing.T) {
 	assert.Contains(t, err.Error(), "error reading wys file")
 }
 
-func TestUpdateHandler_DownloadWYU_error(t *testing.T) {
+func TestHandler_UpdateHandler_download_WYU_error(t *testing.T) {
 	wycFile := "../test_files/client.1.0.1.wyc"
 	wysFile := "../test_files/widgetX.1.0.1.wys"
 	wyuFile := "../test_files/widgetX.1.0.1.wyu"
@@ -250,7 +250,7 @@ func TestUpdateHandler_DownloadWYU_error(t *testing.T) {
 	assert.Contains(t, err.Error(), "Error downloading")
 }
 
-func TestUpdateHandler_InvalidWYU_error(t *testing.T) {
+func TestHandler_UpdateHandler_invalid_WYU_error(t *testing.T) {
 	wycFile := "../test_files/client.1.0.1.wyc"
 	wysFile := "../test_files/widgetX.1.0.1.wys"
 	// wyuFile := "../test_files/widgetX.1.0.1.wyu"
@@ -288,7 +288,7 @@ func TestUpdateHandler_InvalidWYU_error(t *testing.T) {
 	assert.Contains(t, err.Error(), "error unzipping")
 }
 
-func TestUpdateHandler_NoSignedHash(t *testing.T) {
+func TestHandler_UpdateHandler_update_not_signed(t *testing.T) {
 	wycFile := "../test_files/client.1.0.1.wyc"
 	wysFile := "../test_files/widgetX.1.0.1.wys"
 	wyuFile := "../test_files/widgetX.1.0.1.wyu"
@@ -326,7 +326,7 @@ func TestUpdateHandler_NoSignedHash(t *testing.T) {
 	assert.Contains(t, err.Error(), "The update is not signed. All updates must be signed in order to be installed.")
 }
 
-func TestUpdateHandler_VerifyHash_error(t *testing.T) {
+func TestHandler_UpdateHandler_signature_verification_error(t *testing.T) {
 	wycFile := "../test_files/client.1.0.1.wyc"
 	wysFile := "../test_files/widgetX.1.0.1.wys"
 	wyuFile := "../test_files/widgetX.1.0.1.wyu"
@@ -364,7 +364,7 @@ func TestUpdateHandler_VerifyHash_error(t *testing.T) {
 	assert.Contains(t, err.Error(), "crypto/rsa: verification error")
 }
 
-func TestUpdateHandler_VerifyAdler32Checksum_error(t *testing.T) {
+func TestHandler_UpdateHandler_checksum_error(t *testing.T) {
 	wycFile := "../test_files/client.1.0.1.wyc"
 	wysFile := "../test_files/widgetX.1.0.1.wys"
 	wyuFile := "../test_files/widgetX.1.0.1.wyu"
@@ -405,7 +405,7 @@ func TestUpdateHandler_VerifyAdler32Checksum_error(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed the Adler32 validation.")
 }
 
-func TestUpdateHandler_GetUpdateDetails_error(t *testing.T) {
+func TestHandler_UpdateHandler_no_updtdetails_file_error(t *testing.T) {
 	wycFile := "../test_files/client.1.0.1.wyc"
 	wysFile := "../test_files/widgetX.1.0.1.wys"
 	wyuFile := "../test_files/test.zip"
@@ -447,46 +447,7 @@ func TestUpdateHandler_GetUpdateDetails_error(t *testing.T) {
 	assert.Contains(t, err.Error(), "no udt file found")
 }
 
-func TestUpdateHandler_Adler32_error(t *testing.T) {
-	wycFile := "../test_files/client.1.0.1.wyc"
-	wysFile := "../test_files/widgetX.1.0.1.wys"
-	// wyuFile := "../test_files/widgetX.1.0.1.wyu"
-
-	// wys server
-	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		dat, err := ioutil.ReadFile(wysFile)
-		assert.Nil(t, err)
-		w.Write(dat)
-	}))
-	defer tsWYS.Close()
-
-	// wys server
-	tsWYU := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("not a wyu archive"))
-	}))
-	defer tsWYU.Close()
-
-	var args Args
-	args.Cdata = wycFile
-	args.Server = tsWYS.URL
-	args.WYUTestServer = tsWYU.URL
-
-	finfo := FakeUpdateInfo{}
-	finfo.ModifyIUC = true
-	finfo.ConfigIUC.IucPublicKey = TLV{}
-	finfo.ModifyWYS = true
-	finfo.ConfigWYS.UpdateFileAdler32 = 1
-	finfo.ConfigWYS.FileSha1 = make([]byte, 0)
-
-	exitCode, err := UpdateHandler(finfo, args)
-	assert.Equal(t, EXIT_ERROR, exitCode)
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "failed the Adler32 validation.")
-}
-
-func TestCheckForUpdateHandler_NoUpdate(t *testing.T) {
+func TestHandler_CheckForUpdateHandler_no_update(t *testing.T) {
 	wycFile := "../test_files/client.1.0.1.wyc"
 	wysFile := "../test_files/widgetX.1.0.1.wys"
 
@@ -515,7 +476,7 @@ func TestCheckForUpdateHandler_NoUpdate(t *testing.T) {
 	assert.True(t, fileExists(args.OutputinfoLog))
 }
 
-func TestCheckForUpdateHandler_ErrorBadWYCFile(t *testing.T) {
+func TestHandler_CheckForUpdateHandler_invalid_WYC_file(t *testing.T) {
 	wycFile := "../test_files/foo"
 	wysFile := "../test_files/widgetX.1.0.1.wys"
 
@@ -544,11 +505,12 @@ func TestCheckForUpdateHandler_ErrorBadWYCFile(t *testing.T) {
 	assert.True(t, fileExists(args.OutputinfoLog))
 }
 
-func TestCheckForUpdateHandler_ErrorHTTP(t *testing.T) {
-	// wycFile := "../test_files/client.1.0.1.wyc"
-	// wysFile := "../test_files/widgetX.1.0.1.wys"
+func TestHandler_CheckForUpdateHandler_http_error(t *testing.T) {
+	wycFile := "../test_files/client.1.0.1.wyc"
 
 	var args Args
+	args.Cdata = wycFile
+	args.Server = "http://foo.bar"
 	f := SetupTmpLog()
 	args.OutputinfoLog = f.Name()
 	defer TearDown(args.OutputinfoLog)
@@ -556,12 +518,13 @@ func TestCheckForUpdateHandler_ErrorHTTP(t *testing.T) {
 
 	info := Info{}
 
-	exitCode, _ := CheckForUpdateHandler(info, args)
+	exitCode, err := CheckForUpdateHandler(info, args)
+	assert.NotNil(t, err)
 	assert.Equal(t, exitCode, EXIT_ERROR)
 	assert.True(t, fileExists(args.OutputinfoLog))
 }
 
-func TestCheckForUpdateHandler_ErrorBadWYSFile(t *testing.T) {
+func TestHandler_CheckForUpdateHandler_invalid_WYS_file(t *testing.T) {
 	wycFile := "../test_files/client.1.0.1.wyc"
 
 	// wys server
