@@ -70,6 +70,9 @@ func CompareVersions(a string, b string) int {
 	return A_EQUAL_TO_B
 }
 
+// GetUpdateDetails finds the updtdetails.udt in a list of files extracted
+// from a wyu archive. It returns a `ConfigUDT` and a list of the files to
+// update.
 func GetUpdateDetails(extractedFiles []string) (udt ConfigUDT, updates []string, err error) {
 	udtFound := false
 
@@ -138,6 +141,7 @@ func RollbackFiles(backupDir string, dstDir string) (err error) {
 	return nil
 }
 
+// InstallUpdate start/stops service and moves the new files into the `installDir`
 func InstallUpdate(udt ConfigUDT, srcFiles []string, installDir string) error {
 	// stop services
 	for _, s := range udt.ServiceToStopBeforeUpdate {
@@ -149,6 +153,7 @@ func InstallUpdate(udt ConfigUDT, srcFiles []string, installDir string) error {
 		}
 	}
 
+	// move the files into the "base directory"
 	for _, f := range srcFiles {
 		err := MoveFile(f, installDir)
 		if err != nil {
@@ -172,16 +177,8 @@ func InstallUpdate(udt ConfigUDT, srcFiles []string, installDir string) error {
 // MoveFile moves a `file` to `dstDir`
 func MoveFile(file string, dstDir string) error {
 	dst := filepath.Join(dstDir, filepath.Base(file))
-	// Rename() returns *LinkError
-	err := os.Rename(file, dst)
-	// if err != nil {
-	// 	e := err.(*os.LinkError)
-	// 	fmt.Println("Op: ", e.Op)
-	// 	fmt.Println("Old: ", e.Old)
-	// 	fmt.Println("New: ", e.New)
-	// 	fmt.Println("Err: ", e.Err)
-	// }
-	return err
+	// Rename() returns *LinkError if it errs
+	return os.Rename(file, dst)
 }
 
 // CopyFile copies `src` to `dst`
