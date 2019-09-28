@@ -3,20 +3,36 @@
 ![](https://github.com/huntresslabs/win-service-updater/workflows/Build/badge.svg)
 ![](https://github.com/huntresslabs/win-service-updater/workflows/Test/badge.svg)
 
-Partial implementation of wyUpdate functionality. This updater is written in GoLang to avoid .NET dependencies.
+Partial implementation of "core" wyUpdate functionality. This updater is written in GoLang to avoid .NET dependencies.
 
 ## Goals
 
-- Compatibility with existing wyUpdate binary files
+- Support for TLS1.3 (default with GoLang 1.13 and main reason for creating this updater)
 - Drop in replacement for use in existing service update commands (should work for any update, there is just no GUI)
+- Compatibility with existing wyUpdate binary files
 
-## Differences
+## Features Implemented
 
-- designed to only be run from a service or command-line, there is no GUI component
-- only full binary replacement (no diff)
-- only supports stopping/starting services before/after update
-  - no registry updates, COM updates, etc.
-- no functionality to elevate privileges (need admin to install a service anyway)
+Basic update functionality works.
+
+- Check for update only (`/justcheck /quickcheck` arguments)
+- Update file signature verification
+- Full file update with ability to stop/start services before/after the update
+- Rollback on failure
+- Logging (`-logging` and `/outputinfo` arguments)
+
+## Current Limitations/Differences
+
+- Support only for A.B.C.D (or A.B.C) version numbering; No "alpha", "beta", "pre", etc.
+- No GUI component, created to be run from a service or command-line
+- Only full binary replacement (no diff)
+- Only supports stopping/starting services before/after update
+  - No registry updates, COM updates, etc.
+- No functionality to elevate privileges (need admin to install a service anyway)
+- Only "installs" files to the "base directory" (directory the updater is run from)
+- No FTP support
+- Does not self-update
+- No uninstall
 
 ## Arguments supported
 
@@ -25,12 +41,12 @@ Partial implementation of wyUpdate functionality. This updater is written in GoL
 - "/noerr",
 - "-urlargs=_args_"
 - "/outputinfo=_out_"
-- "/fromservice"
+- "/fromservice" (normal operation, but added so the argument parser doesn't error)
 - "-logfile=_log_"
 - "-cdata=_file_"
 - "-server=_url_"
 
-## Operation
+## General Operation
 
 - To check if an update is available:
   - Download the .wys file (update URL specified in client.wyc)
@@ -39,3 +55,10 @@ Partial implementation of wyUpdate functionality. This updater is written in GoL
   - Download the .wyu file (specified in the .wys file)
   - Check the signature of the update
   - Apply the update
+
+## Commands
+
+- `cmd/updater` updater executable
+- `cmd/wycparser` executable for parsing WYC files
+- `cmd/wysparser` executable for parsing WYS files
+- `cmd/wyuparser` executable for parsing WYU files (specifically the updtdetails.udt inside the archive)
