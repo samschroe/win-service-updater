@@ -16,6 +16,7 @@ Implementation of "core" wyUpdate functionality. This updater is written in GoLa
 Basic update functionality works.
 
 - Check for update only (`/justcheck /quickcheck` arguments)
+- Replacement of `%urlargs%` in URLs when `-urlargs` argument is provided
 - Update file signature verification
 - Full file update with ability to stop/start services before/after the update
 - Rollback on failure
