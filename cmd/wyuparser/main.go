@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"log"
 	"os"
 
@@ -10,7 +9,7 @@ import (
 )
 
 func main() {
-	tmpDir, err := ioutil.TempDir("", "prefix")
+	tmpDir, err := updater.CreateTempDir()
 	if err != nil {
 		log.Fatal(err)
 	}
