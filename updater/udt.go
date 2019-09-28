@@ -115,6 +115,7 @@ func ParseUDT(path string) (ConfigUDT, error) {
 
 // WriteUDT writes a UDT file
 // Not all wyUpdate UDT options are implemented
+// This is currently only used in testing
 func WriteUDT(udt ConfigUDT, path string) error {
 	f, err := os.Create(path)
 	if nil != err {
@@ -126,19 +127,31 @@ func WriteUDT(udt ConfigUDT, path string) error {
 	f.Write([]byte(UPDTDETAILS_HEADER))
 
 	// INT_UDT_NUMBER_OF_REGISTRY_CHANGES
-	WriteTLV(f, udt.NumberOfRegistryChanges)
+	err = WriteTLV(f, udt.NumberOfRegistryChanges)
+	if nil != err {
+		return err
+	}
 
 	// INT_UDT_NUMBER_OF_FILE_INFOS
-	WriteTLV(f, udt.NumberOfFileInfos)
+	err = WriteTLV(f, udt.NumberOfFileInfos)
+	if nil != err {
+		return err
+	}
 
 	// STRING_UDT_SERVICE_TO_STOP_BEFORE_UPDATE
 	for _, s := range udt.ServiceToStopBeforeUpdate {
-		WriteTLV(f, s)
+		err := WriteTLV(f, s)
+		if nil != err {
+			return err
+		}
 	}
 
 	// STRING_UDT_SERVICE_TO_START_AFTER_UPDATE
 	for _, s := range udt.ServiceToStartAfterUpdate {
-		WriteTLV(f, s)
+		err := WriteTLV(f, s)
+		if nil != err {
+			return err
+		}
 	}
 
 	err = binary.Write(f, binary.BigEndian, byte(END_UDT))
