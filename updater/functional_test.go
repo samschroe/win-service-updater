@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -206,7 +207,7 @@ func TestFunctional_UpdateWithRollback(t *testing.T) {
 	// fixup URL adding port from test server
 	turi := fixupTestURL(string(iuc.IucServerFileSite[0].Value), tsWYS.URL)
 
-	fp := fmt.Sprintf("%s\\wys", tmpDir)
+	fp := filepath.Join(tmpDir, "wys")
 	err = DownloadFile([]string{turi}, fp)
 	assert.Nil(t, err)
 
@@ -219,7 +220,7 @@ func TestFunctional_UpdateWithRollback(t *testing.T) {
 	assert.Equal(t, A_LESS_THAN_B, rc)
 
 	// download wyu
-	fp = fmt.Sprintf("%s\\wyu", tmpDir)
+	fp = filepath.Join(tmpDir, "wyu")
 	err = DownloadFile([]string{tsWYU.URL}, fp)
 	assert.Nil(t, err)
 
