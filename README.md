@@ -3,7 +3,7 @@
 ![](https://github.com/huntresslabs/win-service-updater/workflows/Build/badge.svg)
 ![](https://github.com/huntresslabs/win-service-updater/workflows/Test/badge.svg)
 
-Implementation of "core" wyUpdate functionality. This updater is written in GoLang to avoid .NET dependencies.
+Implementation of "core" wyUpdate functionality. wyUpdate is a utility written in .NET for updating Windows applications. We used wyUpdate for years, but couldn't rely on a standard version of .NET across our customer base and ultimately decided to reimplement in GoLang.
 
 ## Goals
 
