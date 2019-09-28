@@ -58,13 +58,9 @@ func TestNet_DownloadFile_AllError(t *testing.T) {
 }
 
 func TestNet_DownloadFile_webpage(t *testing.T) {
-	htmlFile := "../test_files/webpage.html"
-
 	server1 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		dat, err := ioutil.ReadFile(htmlFile)
-		assert.Nil(t, err)
-		w.Write(dat)
+		w.Write([]byte("<html>This is HTML</html>"))
 	}))
 	defer server1.Close()
 
@@ -78,6 +74,7 @@ func TestNet_DownloadFile_webpage(t *testing.T) {
 	assert.NotNil(t, err)
 	_, ok := err.(*multierror.Error)
 	assert.True(t, ok)
+	assert.Contains(t, err.Error(), "a web page was returned from the web server")
 }
 
 func TestNet_DownloadFile_NoURLs(t *testing.T) {
