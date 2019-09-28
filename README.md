@@ -47,19 +47,20 @@ Basic update functionality works.
 - "-cdata=_file_"
 - "-server=_url_"
 
-## General Operation
-
-- To check if an update is available:
-  - Download the .wys file (update URL specified in client.wyc)
-  - Compare the available update (speficied in the .wys file) with the version currently installed
-- If an update is required:
-  - Download the .wyu file (specified in the .wys file)
-  - Check the signature of the update
-  - Apply the update
-
 ## Commands
 
 - Build `cmd/updater` for main updater executable
 - Build `cmd/wycparser` for WYC parser executable (specifically the iuclient.iuc inside the archive)
 - Build `cmd/wysparser` for WYS parser executable
 - Build `cmd/wyuparser` for WYU parser executable (specifically the updtdetails.udt inside the archive)
+
+## General Operation
+
+- To check if an update is available:
+  - Download the .wys file (URL specified in client.wyc)
+  - Compare the available update (specified in the .wys file) with the version currently installed
+- If an update is required:
+  - Download the .wyu file (URL specified in the .wys file)
+  - If the update is signed, verify the signature of the update otherwise verify the checksum
+  - Apply the update
+  - Update the version number contained within the client.wyc
