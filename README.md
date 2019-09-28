@@ -59,7 +59,7 @@ Basic update functionality works.
 
 ## Commands
 
-- `cmd/updater` updater executable
-- `cmd/wycparser` executable for parsing WYC files
-- `cmd/wysparser` executable for parsing WYS files
-- `cmd/wyuparser` executable for parsing WYU files (specifically the updtdetails.udt inside the archive)
+- Build `cmd/updater` for main updater executable
+- Build `cmd/wycparser` for WYC parser executable (specifically the iuclient.iuc inside the archive)
+- Build `cmd/wysparser` for WYS parser executable
+- Build `cmd/wyuparser` for WYU parser executable (specifically the updtdetails.udt inside the archive)
