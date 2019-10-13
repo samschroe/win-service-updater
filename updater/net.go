@@ -3,11 +3,19 @@ package updater
 import (
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/go-multierror"
+)
+
+const (
+	TimeoutDial         = 30
+	TimeoutTLSHandshake = 30
+	TimeoutClient       = 60
 )
 
 // DownloadFile will download a file, saving it to a local file. It
@@ -48,7 +56,19 @@ func DownloadFile(urls []string, localpath string) error {
 
 // HTTPGetFile GETs a file and saves it locally
 func HTTPGetFile(URL string, file *os.File) error {
-	resp, err := http.Get(URL)
+	httpTransport := &http.Transport{
+		Dial: (&net.Dialer{
+			Timeout: time.Second * TimeoutDial,
+		}).Dial,
+		TLSHandshakeTimeout: time.Second * TimeoutTLSHandshake,
+	}
+
+	httpClient := &http.Client{
+		Timeout:   time.Second * TimeoutClient,
+		Transport: httpTransport,
+	}
+
+	resp, err := httpClient.Get(URL)
 	if nil != err {
 		return err
 	}
