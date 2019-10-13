@@ -24,6 +24,23 @@ func TestNet_HTTPGetFile_Timeout(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
+func TestNet_HTTPGetFile_Nil_File(t *testing.T) {
+	wysFile := "../test_files/widgetX.1.0.1.wys"
+
+	// hold connection open to longer than TimeoutClient
+	server1 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		dat, err := ioutil.ReadFile(wysFile)
+		assert.Nil(t, err)
+		w.Write(dat)
+	}))
+	defer server1.Close()
+
+	err := HTTPGetFile(server1.URL, nil)
+	t.Log(err)
+	assert.NotNil(t, err)
+}
+
 func TestNet_DownloadFile_Success(t *testing.T) {
 	wysFile := "../test_files/widgetX.1.0.1.wys"
 
