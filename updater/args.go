@@ -16,6 +16,7 @@ import (
 
 // Args contains the parsed command-line arguments
 type Args struct {
+	Debug         bool
 	Quickcheck    bool
 	Justcheck     bool
 	Noerr         bool
@@ -34,10 +35,16 @@ func ParseArgs(argsSlice []string) (args Args, err error) {
 	// default to client.wyc
 	args.Cdata = filepath.Join(GetExeDir(), CLIENT_WYC)
 
-	for _, arg := range argsSlice {
+	for i, arg := range argsSlice {
+		if i == 0 {
+			continue
+		}
+
 		larg := strings.ToLower(arg)
 
 		switch {
+		case larg == "/debug":
+			args.Debug = true
 		case larg == "/quickcheck":
 			args.Quickcheck = true
 		case larg == "/justcheck":

@@ -20,29 +20,59 @@ type Info struct{}
 func Handler() int {
 	args, err := ParseArgs(os.Args)
 	if nil != err {
+		if args.Debug {
+			fmt.Println(err.Error())
+		}
 		LogErrorMsg(args, err.Error())
 		LogOutputInfoMsg(args, err.Error())
 	}
-	return EXIT_ERROR
 
 	info := Info{}
 
 	// check for updates
 	if args.Quickcheck && args.Justcheck {
+		if args.Debug {
+			fmt.Println("Checking for updates...")
+		}
+
 		rc, err := CheckForUpdateHandler(info, args)
 		if nil != err {
+			if args.Debug {
+				fmt.Println(err.Error())
+			}
 			LogErrorMsg(args, err.Error())
 			LogOutputInfoMsg(args, err.Error())
 		}
+
+		if args.Debug {
+			switch rc {
+			case EXIT_NO_UPDATE:
+				fmt.Println("No update available")
+			case EXIT_UPDATE_AVALIABLE:
+				fmt.Println("Update available")
+			}
+		}
+
 		return rc
 	}
 
 	// update
 	if args.Fromservice {
+		if args.Debug {
+			fmt.Println("Updating...")
+		}
+
 		rc, err := UpdateHandler(info, (args))
 		if nil != err {
+			if args.Debug {
+				fmt.Println(err.Error())
+			}
 			LogErrorMsg(args, err.Error())
 			LogOutputInfoMsg(args, err.Error())
+		}
+
+		if args.Debug && rc == 0 {
+			fmt.Println("Update successful")
 		}
 		return rc
 	}
