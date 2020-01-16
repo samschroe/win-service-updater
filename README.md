@@ -37,6 +37,7 @@ Basic update functionality works.
 
 ## Arguments supported
 
+- "/debug"
 - "/quickcheck"
 - "/justcheck"
 - "/noerr",
