@@ -22,9 +22,9 @@ func Handler() int {
 	if nil != err {
 		LogErrorMsg(args, err.Error())
 		LogOutputInfoMsg(args, err.Error())
+		return EXIT_ERROR
 	}
-	return EXIT_ERROR
-
+	
 	info := Info{}
 
 	// check for updates
