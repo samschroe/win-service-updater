@@ -25,6 +25,7 @@ func Handler() int {
 		}
 		LogErrorMsg(args, err.Error())
 		LogOutputInfoMsg(args, err.Error())
+		return EXIT_ERROR
 	}
 
 	info := Info{}
