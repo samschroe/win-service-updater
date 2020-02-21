@@ -32,14 +32,12 @@ type Args struct {
 
 // ParseArgs returns a struct with the parsed command-line arguments
 func ParseArgs(argsSlice []string) (args Args, err error) {
+	// remove the program argument
+	argsSlice = argsSlice[1:]
 	// default to client.wyc
 	args.Cdata = filepath.Join(GetExeDir(), CLIENT_WYC)
 
-	for i, arg := range argsSlice {
-		if i == 0 {
-			continue
-		}
-
+	for _, arg := range argsSlice {
 		larg := strings.ToLower(arg)
 
 		switch {
