@@ -87,7 +87,7 @@ func UpdateHandler(infoer Infoer, args Args) (int, error) {
 
 	tmpDir, err := CreateTempDir()
 	if nil != err {
-		err = fmt.Errorf("no temp dir; %w", err)
+		err = fmt.Errorf("no temp dir; %v", err)
 		return EXIT_ERROR, err
 	}
 	defer os.RemoveAll(tmpDir)
@@ -95,7 +95,7 @@ func UpdateHandler(infoer Infoer, args Args) (int, error) {
 	// parse the WYC file for get update site, installed version, etc.
 	iuc, err := infoer.ParseWYC(args.Cdata)
 	if nil != err {
-		err = fmt.Errorf("error reading %s; %w", args.Cdata, err)
+		err = fmt.Errorf("error reading %s; %v", args.Cdata, err)
 		return EXIT_ERROR, err
 	}
 
@@ -110,7 +110,7 @@ func UpdateHandler(infoer Infoer, args Args) (int, error) {
 	// parse the WYS file (contains the version number of the update and the link to the update)
 	wys, err := infoer.ParseWYS(fp, args)
 	if nil != err {
-		err = fmt.Errorf("error reading wys file (%s); %w", fp, err)
+		err = fmt.Errorf("error reading wys file (%s); %v", fp, err)
 		return EXIT_ERROR, err
 	}
 
@@ -140,14 +140,14 @@ func UpdateHandler(infoer Infoer, args Args) (int, error) {
 		// hash the downloaded WYU file
 		sha1hash, err := SHA1Hash(fp)
 		if nil != err {
-			err = fmt.Errorf("The downloaded file \"%s\" failed the signature validation: %w", fp, err)
+			err = fmt.Errorf("The downloaded file \"%s\" failed the signature validation: %v", fp, err)
 			return EXIT_ERROR, err
 		}
 
 		// verify the signature of the WYU file (the signed hash is included in the WYS file)
 		err = VerifyHash(&rsa, sha1hash, wys.FileSha1)
 		if nil != err {
-			err = fmt.Errorf("The downloaded file \"%s\" is not signed. %w", fp, err)
+			err = fmt.Errorf("The downloaded file \"%s\" is not signed. %v", fp, err)
 			return EXIT_ERROR, err
 		}
 	}
@@ -164,7 +164,7 @@ func UpdateHandler(infoer Infoer, args Args) (int, error) {
 	// extract the WYU to tmpDir
 	_, files, err := Unzip(fp, tmpDir)
 	if nil != err {
-		err = fmt.Errorf("error unzipping %s; %w", fp, err)
+		err = fmt.Errorf("error unzipping %s; %v", fp, err)
 		return EXIT_ERROR, err
 	}
 
@@ -185,7 +185,7 @@ func UpdateHandler(infoer Infoer, args Args) (int, error) {
 	// TODO is there a way to clean this up
 	err = InstallUpdate(udt, updates, instDir)
 	if nil != err {
-		err = fmt.Errorf("error applying update; %w", err)
+		err = fmt.Errorf("error applying update; %v", err)
 		// TODO rollback should restore client.wyc
 		RollbackFiles(backupDir, instDir)
 		// start services, best effort
@@ -207,13 +207,13 @@ func CheckForUpdateHandler(infoer Infoer, args Args) (int, error) {
 	// read WYC
 	iuc, err := infoer.ParseWYC(args.Cdata)
 	if nil != err {
-		err = fmt.Errorf("error reading %s; %w", args.Cdata, err)
+		err = fmt.Errorf("error reading %s; %v", args.Cdata, err)
 		return EXIT_ERROR, err
 	}
 
 	tmpDir, err := CreateTempDir()
 	if nil != err {
-		err = fmt.Errorf("no temp dir; %w", err)
+		err = fmt.Errorf("no temp dir; %v", err)
 		return EXIT_ERROR, err
 	}
 	defer os.RemoveAll(tmpDir)
@@ -228,7 +228,7 @@ func CheckForUpdateHandler(infoer Infoer, args Args) (int, error) {
 
 	wys, err := infoer.ParseWYS(wysTmpFile, args)
 	if nil != err {
-		err = fmt.Errorf("error reading %s; %w", wysTmpFile, err)
+		err = fmt.Errorf("error reading %s; %v", wysTmpFile, err)
 		return EXIT_ERROR, err
 	}
 

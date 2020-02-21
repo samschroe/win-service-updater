@@ -148,7 +148,7 @@ func InstallUpdate(udt ConfigUDT, srcFiles []string, installDir string) error {
 		svc := ValueToString(&s)
 		e := StopService(svc)
 		if nil != e {
-			e := fmt.Errorf("failed to stop %s; %w", svc, e)
+			e := fmt.Errorf("failed to stop %s; %v", svc, e)
 			return e
 		}
 	}
@@ -166,7 +166,7 @@ func InstallUpdate(udt ConfigUDT, srcFiles []string, installDir string) error {
 		svc := ValueToString(&s)
 		e := StartService(svc)
 		if nil != e {
-			e := fmt.Errorf("failed to start %s; %w", svc, e)
+			e := fmt.Errorf("failed to start %s; %v", svc, e)
 			return e
 		}
 	}

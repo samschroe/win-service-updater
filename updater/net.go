@@ -30,9 +30,9 @@ func DownloadFile(urls []string, localpath string) error {
 	out, err := os.Create(localpath)
 	if nil != err {
 		if len(localpath) == 0 {
-			err = fmt.Errorf("Error trying to save file: %w", err)
+			err = fmt.Errorf("Error trying to save file: %v", err)
 		} else {
-			err = fmt.Errorf("Error trying to save file \"%s\": %w", localpath, err)
+			err = fmt.Errorf("Error trying to save file \"%s\": %v", localpath, err)
 		}
 		return err
 	}

@@ -318,7 +318,7 @@ func UpdateWYCWithNewVersionNumber(config ConfigIUC, origWYCFile string, version
 	// other files.
 	tmpDir, err := CreateTempDir()
 	if nil != err {
-		err = fmt.Errorf("no temp dir; %w", err)
+		err = fmt.Errorf("no temp dir; %v", err)
 		return "", err
 	}
 

@@ -52,7 +52,7 @@ func CreateTempDir() (tempDir string, err error) {
 func Unzip(srcArchive string, destDir string) (root string, filenames []string, err error) {
 	r, err := zip.OpenReader(srcArchive)
 	if err != nil {
-		err := fmt.Errorf("OpenReader() failed: %w", err)
+		err := fmt.Errorf("OpenReader() failed: %v", err)
 		return "", filenames, err
 	}
 	defer r.Close()
@@ -91,21 +91,21 @@ func writeDecompressedFile(f *zip.File, fpath string) error {
 
 	outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 	if err != nil {
-		err := fmt.Errorf("OpenFile() failed: %w", err)
+		err := fmt.Errorf("OpenFile() failed: %v", err)
 		return err
 	}
 	defer outFile.Close()
 
 	rc, err := f.Open()
 	if err != nil {
-		err := fmt.Errorf("Open() failed: %w", err)
+		err := fmt.Errorf("Open() failed: %v", err)
 		return err
 	}
 	defer rc.Close()
 
 	_, err = io.Copy(outFile, rc)
 	if err != nil {
-		err := fmt.Errorf("Copy() failed: %w", err)
+		err := fmt.Errorf("Copy() failed: %v", err)
 		return err
 	}
 
