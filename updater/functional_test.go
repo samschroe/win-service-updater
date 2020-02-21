@@ -53,7 +53,7 @@ func TestFunctional_CompareVersions(t *testing.T) {
 	info := Info{}
 	wysFile := "../test_files/widgetX.1.0.1.wys"
 
-	argv := []string{"-urlargs=12345:67890"}
+	argv := []string{"", "-urlargs=12345:67890"}
 	args, err := ParseArgs(argv)
 	assert.Nil(t, err)
 
@@ -82,7 +82,7 @@ func TestFunctional_SameVersion(t *testing.T) {
 	}))
 	defer tsWYS.Close()
 
-	argv := []string{fmt.Sprintf(`-cdata="%s"`, wycFile)}
+	argv := []string{"", fmt.Sprintf(`-cdata="%s"`, wycFile)}
 	args, err := ParseArgs(argv)
 	assert.Nil(t, err)
 
@@ -135,7 +135,7 @@ func TestFunctional_URLArgs(t *testing.T) {
 	}))
 	defer tsWYU.Close()
 
-	argv := []string{fmt.Sprintf("-urlargs=%s", auth)}
+	argv := []string{"", fmt.Sprintf("-urlargs=%s", auth)}
 	args, err := ParseArgs(argv)
 	assert.Nil(t, err)
 
@@ -182,6 +182,7 @@ func TestFunctional_UpdateWithRollback(t *testing.T) {
 
 	// test server
 	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Contains(t, r.URL.String(), auth)
 		w.WriteHeader(http.StatusOK)
 		dat, err := ioutil.ReadFile(wysFile)
 		assert.Nil(t, err)
@@ -190,6 +191,7 @@ func TestFunctional_UpdateWithRollback(t *testing.T) {
 	defer tsWYS.Close()
 
 	tsWYU := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Contains(t, r.URL.String(), auth)
 		w.WriteHeader(http.StatusOK)
 		dat, err := ioutil.ReadFile(wyuFile)
 		assert.Nil(t, err)
@@ -197,15 +199,17 @@ func TestFunctional_UpdateWithRollback(t *testing.T) {
 	}))
 	defer tsWYU.Close()
 
-	argv := []string{fmt.Sprintf("-urlargs=%s", auth)}
+	argv := []string{"", fmt.Sprintf("-urlargs=%s", auth)}
 	args, err := ParseArgs(argv)
 	assert.Nil(t, err)
 
 	iuc, err := info.ParseWYC(wycFile)
 	assert.Nil(t, err)
 
+	urls := iuc.GetWYSURLs(args)
+
 	// fixup URL adding port from test server
-	turi := fixupTestURL(string(iuc.IucServerFileSite[0].Value), tsWYS.URL)
+	turi := fixupTestURL(urls[0], tsWYS.URL)
 
 	fp := filepath.Join(tmpDir, "wys")
 	err = DownloadFile([]string{turi}, fp)
@@ -219,9 +223,12 @@ func TestFunctional_UpdateWithRollback(t *testing.T) {
 	rc := CompareVersions(string(iuc.IucInstalledVersion.Value), wys.VersionToUpdate)
 	assert.Equal(t, A_LESS_THAN_B, rc)
 
+	urls = wys.GetWYUURLs(args)
+	turi = fixupTestURL(urls[0], tsWYU.URL)
+
 	// download wyu
 	fp = filepath.Join(tmpDir, "wyu")
-	err = DownloadFile([]string{tsWYU.URL}, fp)
+	err = DownloadFile([]string{turi}, fp)
 	assert.Nil(t, err)
 
 	key, err := ParsePublicKey(string(iuc.IucPublicKey.Value))

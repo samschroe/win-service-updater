@@ -18,27 +18,6 @@ const (
 	A_GREATER_THAN_B = 1
 )
 
-func convertVerToNum(ver string) int {
-	var num int
-	fields := strings.Split(ver, ".")
-	for i, field := range fields {
-		x, _ := strconv.Atoi(field)
-		if i == 0 {
-			num = num + (x << 24)
-		}
-		if i == 1 {
-			num = num + (x << 16)
-		}
-		if i == 2 {
-			num = num + (x << 8)
-		}
-		if i == 3 {
-			num = num + x
-		}
-	}
-	return num
-}
-
 func fileExists(filename string) bool {
 	_, err := os.Stat(filename)
 	if !os.IsNotExist(err) {
@@ -55,18 +34,35 @@ func fileExists(filename string) bool {
 // Return a negative number if versionA is less than versionB, 0 if they're
 // equal, a positive number if versionA is greater than versionB.
 func CompareVersions(a string, b string) int {
-	aNum := convertVerToNum(a)
-	bNum := convertVerToNum(b)
+	fieldsA := strings.Split(a, ".")
+	fieldsB := strings.Split(b, ".")
 
-	if aNum < bNum {
-		return A_LESS_THAN_B
+	var shortest_len int
+	if len(fieldsA) < len(fieldsB) {
+		shortest_len = len(fieldsA)
+	} else {
+		shortest_len = len(fieldsB)
 	}
-	if aNum > bNum {
+
+	for i := 0; i < shortest_len; i++ {
+		a, _ := strconv.Atoi(fieldsA[i])
+		b, _ := strconv.Atoi(fieldsB[i])
+
+		if a > b {
+			return A_GREATER_THAN_B
+		}
+		if a < b {
+			return A_LESS_THAN_B
+		}
+	}
+
+	if len(fieldsA) > len(fieldsB) {
 		return A_GREATER_THAN_B
 	}
-	//if aNum == bNum {
-	// return 0
-	//}
+	if len(fieldsA) < len(fieldsB) {
+		return A_LESS_THAN_B
+	}
+
 	return A_EQUAL_TO_B
 }
 
