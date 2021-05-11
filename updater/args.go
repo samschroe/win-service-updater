@@ -1,8 +1,10 @@
 package updater
 
 import (
-	"fmt"
+	"flag"
+	"io/ioutil"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -30,6 +32,8 @@ type Args struct {
 	WYUTestServer string // Used for testing
 }
 
+var argRegexp *regexp.Regexp = regexp.MustCompile(`^/`)
+
 // ParseArgs returns a struct with the parsed command-line arguments
 func ParseArgs(argsSlice []string) (args Args, err error) {
 	// remove the program argument
@@ -37,42 +41,40 @@ func ParseArgs(argsSlice []string) (args Args, err error) {
 	// default to client.wyc
 	args.Cdata = filepath.Join(GetExeDir(), CLIENT_WYC)
 
-	for _, arg := range argsSlice {
-		larg := strings.ToLower(arg)
+	fs := flag.NewFlagSet("win-service-updater", flag.ContinueOnError)
+	fs.SetOutput(ioutil.Discard)
 
-		switch {
-		case larg == "/debug":
-			args.Debug = true
-		case larg == "/quickcheck":
-			args.Quickcheck = true
-		case larg == "/justcheck":
-			args.Justcheck = true
-		case larg == "/noerr":
-			args.Noerr = true
-		case larg == "/fromservice":
-			args.Fromservice = true
-		case strings.HasPrefix(larg, "-urlargs="):
-			fields := strings.Split(larg, "=")
-			args.Urlargs = fields[1]
-		case strings.HasPrefix(larg, "-logfile="):
-			fields := strings.Split(larg, "=")
-			args.Logfile = fields[1]
-		case strings.HasPrefix(larg, "/outputinfo"):
-			args.Outputinfo = true
-			if strings.Contains(larg, "=") {
-				fields := strings.Split(larg, "=")
-				args.OutputinfoLog = fields[1]
-			}
-		case strings.HasPrefix(larg, "-cdata="):
-			fields := strings.Split(larg, "=")
-			args.Cdata = fields[1]
-		case strings.HasPrefix(larg, "-server="):
-			fields := strings.Split(larg, "=")
-			args.Server = fields[1]
-		default:
-			err = fmt.Errorf("unknown argument '%s'", larg)
-			return args, err
-		}
+	// translate windows-style command line args to the normal
+	// Golang style (- in the front as opposed to /)
+	normalizedArgs := make([]string, 0, len(argsSlice))
+	for _, arg := range argsSlice {
+		normalizedArgs = append(normalizedArgs, argRegexp.ReplaceAllLiteralString(strings.ToLower(arg), "-"))
 	}
+
+	// debug := fs.Bool("debug", false, "Whether or not to log debug messages")
+	fs.BoolVar(&args.Debug, "debug", false, "Whether or not to run as debug")
+	fs.BoolVar(&args.Quickcheck, "quickcheck", false, "Whether or not to run a quickcheck")
+	fs.BoolVar(&args.Justcheck, "justcheck", false, "Whether or not to run a justcheck")
+	fs.BoolVar(&args.Noerr, "noerr", false, "Whether or not to error")
+	fs.BoolVar(&args.Fromservice, "fromservice", false, "Whether or not to run from a service")
+	fs.StringVar(&args.Urlargs, "urlargs", "", "Additonal string to add onto the URL")
+	fs.StringVar(&args.Logfile, "logfile", "", "Name of log file")
+	fs.StringVar(&args.OutputinfoLog, "outputinfo", "", "Output info")
+	fs.StringVar(&args.Cdata, "cdata", "", "Config data")
+	fs.StringVar(&args.Server, "server", "", "Server")
+
+	err = fs.Parse(normalizedArgs)
+	if err != nil {
+		return args, err
+	}
+
+	// check to see if outputinfo was set. If so set outputinfo
+	// bool to true
+	fs.Visit(func(f *flag.Flag) {
+		if f.Name == "outputinfo" {
+			args.Outputinfo = true
+		}
+	})
+
 	return args, nil
 }

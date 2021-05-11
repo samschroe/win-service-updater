@@ -1,6 +1,7 @@
 package updater
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -547,4 +548,23 @@ func TestHandler_CheckForUpdateHandler_invalid_WYS_file(t *testing.T) {
 	exitCode, _ := CheckForUpdateHandler(info, args)
 	assert.Equal(t, exitCode, EXIT_ERROR)
 	assert.True(t, fileExists(args.OutputinfoLog))
+}
+
+// prettyPrint is a nice to have debugging function (prints out
+// structures nicely)
+func prettyPrint(o interface{}) string {
+	jayson, _ := json.MarshalIndent(o, "", "\t")
+	return string(jayson)
+}
+
+// MarshalJSON prints out TLV structures so that you can make sense of
+// them
+func (t TLV) MarshalJSON() ([]byte, error) {
+	type localTlv TLV
+	type tlvPlus struct {
+		localTlv
+		ValueString string
+	}
+
+	return json.Marshal(tlvPlus{localTlv(t), string(t.Value)})
 }
