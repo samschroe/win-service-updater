@@ -59,47 +59,6 @@ func TearDown(f string) {
 	}
 }
 
-func TestHandler_UpdateHandler(t *testing.T) {
-	wycFile := "../test_files/client.1.0.1.wyc"
-	wysFile := "../test_files/widgetX.1.0.1.wys"
-	wyuFile := "../test_files/widgetX.1.0.1.wyu"
-
-	// wys server
-	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		dat, err := ioutil.ReadFile(wysFile)
-		assert.Nil(t, err)
-		w.Write(dat)
-	}))
-	defer tsWYS.Close()
-
-	// wys server
-	tsWYU := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		dat, err := ioutil.ReadFile(wyuFile)
-		assert.Nil(t, err)
-		w.Write(dat)
-	}))
-	defer tsWYU.Close()
-
-	var args Args
-	args.Cdata = wycFile
-	args.Server = tsWYS.URL
-	args.WYUTestServer = tsWYU.URL
-	args.Outputinfo = true
-	f := SetupTmpLog()
-	args.OutputinfoLog = f.Name()
-	defer TearDown(args.OutputinfoLog)
-	defer f.Close()
-
-	info := Info{}
-
-	exitCode, err := UpdateHandler(info, args)
-	assert.Equal(t, EXIT_NO_UPDATE, exitCode)
-	assert.Nil(t, err)
-	assert.True(t, fileExists(args.OutputinfoLog))
-}
-
 func TestHandler_UpdateHandler_InvalidWYC(t *testing.T) {
 	wycFile := "../test_files/foo.wyc"
 	wysFile := "../test_files/widgetX.1.0.1.wys"

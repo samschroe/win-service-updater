@@ -38,8 +38,6 @@ var argRegexp *regexp.Regexp = regexp.MustCompile(`^/`)
 func ParseArgs(argsSlice []string) (args Args, err error) {
 	// remove the program argument
 	argsSlice = argsSlice[1:]
-	// default to client.wyc
-	args.Cdata = filepath.Join(GetExeDir(), CLIENT_WYC)
 
 	fs := flag.NewFlagSet("win-service-updater", flag.ContinueOnError)
 	fs.SetOutput(ioutil.Discard)
@@ -60,7 +58,8 @@ func ParseArgs(argsSlice []string) (args Args, err error) {
 	fs.StringVar(&args.Urlargs, "urlargs", "", "Additonal string to add onto the URL")
 	fs.StringVar(&args.Logfile, "logfile", "", "Name of log file")
 	fs.StringVar(&args.OutputinfoLog, "outputinfo", "", "Output info")
-	fs.StringVar(&args.Cdata, "cdata", "", "Config data")
+	// default to client.wyc
+	fs.StringVar(&args.Cdata, "cdata", filepath.Join(GetExeDir(), CLIENT_WYC), "Config data")
 	fs.StringVar(&args.Server, "server", "", "Server")
 
 	err = fs.Parse(normalizedArgs)

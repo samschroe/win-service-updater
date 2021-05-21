@@ -99,7 +99,7 @@ func TestWYC_WriteIUC(t *testing.T) {
 	tmpIUC := GenerateTempFile()
 	defer os.Remove(tmpIUC)
 
-	err = WriteIUC(wyc, tmpIUC)
+	err = writeIuc(wyc, tmpIUC)
 	assert.Nil(t, err)
 
 	tmpDir := GetTempDir()
@@ -120,4 +120,200 @@ func TestWYC_WriteIUC(t *testing.T) {
 		}
 	}
 	assert.True(t, found)
+}
+
+// TestWyc_setWycUrls ...
+func TestWyc_setWycUrls(t *testing.T) {
+	origClientWYC := "../test_files/client.1.0.0.wyc"
+
+	// create a new uiclient.iuc and compare it to the one in the archive
+	info := Info{}
+	wyc, err := info.ParseWYC(origClientWYC)
+	assert.Nil(t, err)
+
+	args := Args{}
+	url := "http://floob.com/blorf"
+	wyc.setWysUrls(url)
+
+	tmpIUC := GenerateTempFile()
+	defer os.Remove(tmpIUC)
+
+	err = writeIuc(wyc, tmpIUC)
+	assert.Nil(t, err)
+
+	tmpDir := GetTempDir()
+	defer os.RemoveAll(tmpDir)
+
+	fh, err := os.Open(tmpIUC)
+	if err != nil {
+		t.Fatalf("could not open %s", tmpIUC)
+	}
+	defer fh.Close()
+	config, err := readIuc(fh)
+	if err != nil {
+		t.Fatal(err)
+	}
+	savedUrls := config.GetWYSURLs(args)
+	assert.Equal(t, 1, len(savedUrls))
+	assert.Equal(t, url, savedUrls[0])
+
+}
+
+// TestWyc_generateFile ...
+func TestWyc_generateFile(t *testing.T) {
+	origClientWYC := "../test_files/client.1.0.0.wyc"
+
+	// create a new uiclient.iuc and compare it to the one in the archive
+	info := Info{}
+	wyc, err := info.ParseWYC(origClientWYC)
+	assert.Nil(t, err)
+
+	tmpDir := GetTempDir()
+	defer os.RemoveAll(tmpDir)
+
+	tmpIUC := GenerateTempFile()
+	defer os.Remove(tmpIUC)
+
+	if err := copyIucToFile(tmpIUC, wyc); err != nil {
+		t.Fatal(err)
+	}
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fh, err := os.Open(tmpIUC)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	newConfig, err := readIuc(fh)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, wyc, newConfig)
+}
+
+// copyIucToFile ...
+func copyIucToFile(tmpIUC string, wyc ConfigIUC) error {
+	tmpIucFile, err := os.Create(tmpIUC)
+	if err != nil {
+		return err
+	}
+
+	defer tmpIucFile.Close()
+
+	// write HEADER
+	if _, err := tmpIucFile.Write([]byte(IUC_HEADER)); err != nil {
+		return err
+	}
+
+	// DSTRING_IUC_COMPANY_NAME:
+	// writeTlv(f, wyc.IucCompanyName)
+
+	if err := writeTagAsTlv(tmpIucFile, wyc.IucCompanyName.Tag, ValueToString(&wyc.IucCompanyName)); err != nil {
+		return err
+	}
+	// DSTRING_IUC_PRODUCT_NAME:
+	// writeTlv(f, wyc.IucProductName)
+	if err := writeTagAsTlv(tmpIucFile, wyc.IucProductName.Tag, ValueToString(&wyc.IucProductName)); err != nil {
+		return err
+	}
+
+	// STRING_IUC_GUID:
+	// writeTlv(f, wyc.IucGUID)
+	if err := writeTagAsTlv(tmpIucFile, wyc.IucGUID.Tag, ValueToString(&wyc.IucGUID)); err != nil {
+		return err
+	}
+
+	// DSTRING_IUC_INSTALLED_VERSION:
+	// writeTlv(f, wyc.IucInstalledVersion)
+	if err := writeTagAsTlv(tmpIucFile, wyc.IucInstalledVersion.Tag, ValueToString(&wyc.IucInstalledVersion)); err != nil {
+		return err
+	}
+
+	// DSTRING_IUC_SERVER_FILE_SITE
+	for _, s := range wyc.IucServerFileSite {
+		// writeTlv(f, s)
+		if err := writeTagAsTlv(tmpIucFile, s.Tag, ValueToString(&s)); err != nil {
+			return err
+		}
+	}
+
+	// DSTRING_IUC_WYUPDATE_SERVER_SITE - NOT USED
+	for _, s := range wyc.IucWyupdateServerSite {
+		// writeTlv(f, s)
+		if err := writeTagAsTlv(tmpIucFile, s.Tag, ValueToString(&s)); err != nil {
+			return err
+		}
+	}
+
+	// DSTRING_IUC_HEADER_IMAGE_ALIGNMENT
+	// writeTlv(f, wyc.IucHeaderImageAlignment)
+	if err := writeTagAsTlv(tmpIucFile, wyc.IucHeaderImageAlignment.Tag, ValueToString(&wyc.IucHeaderImageAlignment)); err != nil {
+		return err
+	}
+
+	// INT_IUC_HEADER_TEXT_INDENT
+	// writeTlv(f, wyc.IucHeaderTextIndent)
+	if err := writeTagAsTlv(tmpIucFile, wyc.IucHeaderTextIndent.Tag, ValueToInt(&wyc.IucHeaderTextIndent)); err != nil {
+		return err
+	}
+
+	// DSTRING_IUC_HEADER_TEXT_COLOR
+	// writeTlv(f, wyc.IucHeaderTextColor)
+	if err := writeTagAsTlv(tmpIucFile, wyc.IucHeaderTextColor.Tag, ValueToString(&wyc.IucHeaderTextColor)); err != nil {
+		return err
+	}
+
+	// DSTRING_IUC_HEADER_FILENAME
+	// writeTlv(f, wyc.IucHeaderFilename)
+	if err := writeTagAsTlv(tmpIucFile, wyc.IucHeaderFilename.Tag, ValueToString(&wyc.IucHeaderFilename)); err != nil {
+		return err
+	}
+
+	// DSTRING_IUC_SIDE_IMAGE_FILENAME:
+	// writeTlv(f, wyc.IucSideImageFilename)
+	if err := writeTagAsTlv(tmpIucFile, wyc.IucSideImageFilename.Tag, ValueToString(&wyc.IucSideImageFilename)); err != nil {
+		return err
+	}
+
+	// DSTRING_IUC_LANGUAGE_CULTURE:
+	// writeTlv(f, wyc.IucLanguageCulture)
+	if err := writeTagAsTlv(tmpIucFile, wyc.IucLanguageCulture.Tag, ValueToString(&wyc.IucLanguageCulture)); err != nil {
+		return err
+	}
+
+	// BOOL_IUC_HIDE_HEADER_DIVIDER:
+	// writeTlv(f, wyc.IucHideHeaderDivider)
+	if err := writeTagAsTlv(tmpIucFile, wyc.IucHideHeaderDivider.Tag, ValueToBool(&wyc.IucHideHeaderDivider)); err != nil {
+		return err
+	}
+
+	// STRING_IUC_PUBLIC_KEY:
+	// writeTlv(f, wyc.IucPublicKey)
+	if err := writeTagAsTlv(tmpIucFile, wyc.IucPublicKey.Tag, ValueToString(&wyc.IucPublicKey)); err != nil {
+		return err
+	}
+
+	// DSTRING_IUC_LANGUAGE_FILENAME - NOT USED
+	// writeTlv(f, wyc.IucLanguageFilename)
+	if err := writeTagAsTlv(tmpIucFile, wyc.IucLanguageFilename.Tag, ValueToString(&wyc.IucLanguageFilename)); err != nil {
+		return err
+	}
+
+	// STRING_IUC_CUSTOM_TITLE_BAR - NOT USED
+	// writeTlv(f, wyc.IucCustomTitleBar)
+	if err := writeTagAsTlv(tmpIucFile, wyc.IucCustomTitleBar.Tag, ValueToString(&wyc.IucCustomTitleBar)); err != nil {
+		return err
+	}
+
+	// BOOL_IUC_CLOSE_WYUPDATE:
+	// writeTlv(f, wyc.IucCloseWyupate)
+	if wyc.IucCloseWyupate.Tag != 0 {
+		if err := writeTagAsTlv(tmpIucFile, wyc.IucCloseWyupate.Tag, ValueToBool(&wyc.IucCloseWyupate)); err != nil {
+			return err
+		}
+	}
+	return nil
 }

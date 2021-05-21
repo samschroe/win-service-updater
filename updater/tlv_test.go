@@ -8,6 +8,6 @@ import (
 
 func TestTLV_WriteTLV(t *testing.T) {
 	tlv := TLV{Length: 1}
-	err := WriteTLV(nil, tlv)
+	err := writeTlv(nil, tlv)
 	assert.NotNil(t, err)
 }
