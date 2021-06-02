@@ -36,7 +36,7 @@ var UDTTags = map[uint8]string{
 	UDT_END_OF_FILE_INFO_IDENTIFIER:              "UDT_END_OF_FILE_INFO_IDENTIFIER",
 	STRING_UDT_SERVICE_TO_STOP_BEFORE_UPDATE:     "STRING_UDT_SERVICE_TO_STOP_BEFORE_UPDATE",
 	STRING_UDT_SERVICE_TO_START_AFTER_UPDATE:     "STRING_UDT_SERVICE_TO_START_AFTER_UPDATE",
-	END_UDT: "END_UDT",
+	END_UDT:                                      "END_UDT",
 }
 
 type ConfigUDT struct {
@@ -151,20 +151,20 @@ func WriteUDT(udt ConfigUDT, path string) error {
 	f.Write([]byte(UPDTDETAILS_HEADER))
 
 	// INT_UDT_NUMBER_OF_REGISTRY_CHANGES
-	err = WriteTLV(f, udt.NumberOfRegistryChanges)
+	err = writeTlv(f, udt.NumberOfRegistryChanges)
 	if nil != err {
 		return err
 	}
 
 	// INT_UDT_NUMBER_OF_FILE_INFOS
-	err = WriteTLV(f, udt.NumberOfFileInfos)
+	err = writeTlv(f, udt.NumberOfFileInfos)
 	if nil != err {
 		return err
 	}
 
 	// STRING_UDT_SERVICE_TO_STOP_BEFORE_UPDATE
 	for _, s := range udt.ServiceToStopBeforeUpdate {
-		err := WriteTLV(f, s)
+		err := writeTlv(f, s)
 		if nil != err {
 			return err
 		}
@@ -172,7 +172,7 @@ func WriteUDT(udt ConfigUDT, path string) error {
 
 	// STRING_UDT_SERVICE_TO_START_AFTER_UPDATE
 	for _, s := range udt.ServiceToStartAfterUpdate {
-		err := WriteTLV(f, s)
+		err := writeTlv(f, s)
 		if nil != err {
 			return err
 		}

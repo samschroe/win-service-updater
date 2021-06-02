@@ -78,53 +78,25 @@ type ConfigIUC struct {
 	IucPublicKey            TLV
 }
 
-func ReadIUCTLV(r io.Reader) *TLV {
-	var record TLV
-
-	err := binary.Read(r, binary.BigEndian, &record.Tag)
-	if err == io.EOF {
-		return nil
-	} else if err != nil {
-		return nil
-	}
-
-	if record.Tag == END_IUC {
-		return nil
-	}
-
-	record.TagString = IUCTags[record.Tag]
-
-	switch record.Tag {
-	case DSTRING_IUC_COMPANY_NAME,
-		DSTRING_IUC_PRODUCT_NAME,
-		DSTRING_IUC_INSTALLED_VERSION,
-		DSTRING_IUC_SERVER_FILE_SITE,
-		DSTRING_IUC_WYUPDATE_SERVER_SITE,
-		DSTRING_IUC_HEADER_IMAGE_ALIGNMENT,
-		DSTRING_IUC_HEADER_TEXT_COLOR,
-		DSTRING_IUC_HEADER_FILENAME,
-		DSTRING_IUC_SIDE_IMAGE_FILENAME,
-		DSTRING_IUC_LANGUAGE_CULTURE,
-		DSTRING_IUC_LANGUAGE_FILENAME:
-		err = binary.Read(r, binary.LittleEndian, &record.DataLength)
-		if err != nil {
-			return nil
-		}
-	default:
-	}
-
-	err = binary.Read(r, binary.LittleEndian, &record.Length)
-	if err != nil {
-		return nil
-	}
-
-	record.Value = make([]byte, record.Length)
-	_, err = io.ReadFull(r, record.Value)
-	if err != nil {
-		return nil
-	}
-
-	return &record
+type wycConfig struct {
+	CompanyName          string
+	ProductName          string
+	InstalledVersions    string
+	Guid                 string
+	ServerFileSite       []string
+	WyupdateServierSite  []string
+	HeaderImageAlignment string
+	HeaderTextIndent     int
+	HeaderTextColor      string
+	HeaderFilename       string
+	SideImageFilename    string
+	LanguageCulture      string
+	LanguageFilename     string
+	HideHeaderDivider    bool
+	CloseWyupate         bool
+	// strings not d. strings.Replace
+	CustomTitleBar string
+	PublicKey      string
 }
 
 // GetWYSURLs returns the ServerFileSite(s) listed in the WYC file.
@@ -140,6 +112,105 @@ func (config ConfigIUC) GetWYSURLs(args Args) (urls []string) {
 		urls = append(urls, u)
 	}
 	return urls
+}
+
+// setWysUrls sets the URLs uses for fetching the .wys file
+func (config *ConfigIUC) setWysUrls(urls ...string) {
+	config.IucServerFileSite = make([]TLV, 0, len(urls))
+	for _, url := range urls {
+		entry := TLV{
+			Tag:        DSTRING_IUC_SERVER_FILE_SITE,
+			Type:       TLV_DSTRING,
+			DataLength: uint32(len(url)) + 4,
+			Length:     uint32(len(url)),
+			Value:      []byte(url),
+		}
+		config.IucServerFileSite = append(config.IucServerFileSite, entry)
+	}
+}
+
+// readIuc reads a .iuc file into a ConfigUIC structure
+func readIuc(iucReader io.Reader) (ConfigIUC, error) {
+	var config ConfigIUC
+
+	// read HEADER
+	header := make([]byte, len(IUC_HEADER))
+	iucReader.Read(header)
+
+	if string(header) != IUC_HEADER {
+		err := fmt.Errorf("invalid iuclient.iuc file")
+		return config, err
+	}
+
+	// read each TLV record until EOF or a TLV indicating the end
+	// of the .iuc file
+	for {
+		tlv, err := readTlv(iucReader)
+		if err != nil {
+			return config, err
+		}
+
+		if tlv == nil {
+			break
+		}
+		switch tlv.Tag {
+		case DSTRING_IUC_COMPANY_NAME:
+			tlv.Type = TLV_DSTRING
+			config.IucCompanyName = *tlv
+		case DSTRING_IUC_PRODUCT_NAME:
+			tlv.Type = TLV_DSTRING
+			config.IucProductName = *tlv
+		case DSTRING_IUC_INSTALLED_VERSION:
+			tlv.Type = TLV_DSTRING
+			config.IucInstalledVersion = *tlv
+		case DSTRING_IUC_SERVER_FILE_SITE:
+			tlv.Type = TLV_DSTRING
+			config.IucServerFileSite = append(config.IucServerFileSite, *tlv)
+		case DSTRING_IUC_WYUPDATE_SERVER_SITE:
+			tlv.Type = TLV_DSTRING
+			config.IucWyupdateServerSite = append(config.IucWyupdateServerSite, *tlv)
+		case DSTRING_IUC_HEADER_IMAGE_ALIGNMENT:
+			tlv.Type = TLV_DSTRING
+			config.IucHeaderImageAlignment = *tlv
+		case DSTRING_IUC_HEADER_TEXT_COLOR:
+			tlv.Type = TLV_DSTRING
+			config.IucHeaderTextColor = *tlv
+		case DSTRING_IUC_HEADER_FILENAME:
+			tlv.Type = TLV_DSTRING
+			config.IucHeaderFilename = *tlv
+		case DSTRING_IUC_SIDE_IMAGE_FILENAME:
+			tlv.Type = TLV_DSTRING
+			config.IucSideImageFilename = *tlv
+		case DSTRING_IUC_LANGUAGE_CULTURE:
+			tlv.Type = TLV_DSTRING
+			config.IucLanguageCulture = *tlv
+		case DSTRING_IUC_LANGUAGE_FILENAME:
+			tlv.Type = TLV_DSTRING
+			config.IucLanguageFilename = *tlv
+		case INT_IUC_HEADER_TEXT_INDENT:
+			tlv.Type = TLV_INT
+			config.IucHeaderTextIndent = *tlv
+		case BOOL_IUC_HIDE_HEADER_DIVIDER:
+			tlv.Type = TLV_BOOL
+			config.IucHideHeaderDivider = *tlv
+		case BOOL_IUC_CLOSE_WYUPDATE:
+			tlv.Type = TLV_BOOL
+			config.IucCloseWyupate = *tlv
+		case STRING_IUC_CUSTOM_TITLE_BAR:
+			tlv.Type = TLV_STRING
+			config.IucCustomTitleBar = *tlv
+		case STRING_IUC_PUBLIC_KEY:
+			tlv.Type = TLV_STRING
+			config.IucPublicKey = *tlv
+		case STRING_IUC_GUID:
+			tlv.Type = TLV_STRING
+			config.IucGUID = *tlv
+		default:
+			err := fmt.Errorf("malformed .iuc file in .wyc archive")
+			return config, err
+		}
+	}
+	return config, nil
 }
 
 // ParseWYC parses a compress WYC file, returning the details as a ConfigIUC struct
@@ -160,86 +231,17 @@ func (wycInfo Info) ParseWYC(compressedWYC string) (ConfigIUC, error) {
 				return config, err
 			}
 			defer fh.Close()
-
-			// read HEADER
-			header := make([]byte, 7)
-			fh.Read(header)
-
-			if string(header) != IUC_HEADER {
-				err := fmt.Errorf("invalid iuclient.iuc file")
+			config, err = readIuc(fh)
+			if err != nil {
 				return config, err
-			}
-
-			for {
-				tlv := ReadIUCTLV(fh)
-				if tlv == nil {
-					break
-				}
-
-				switch tlv.Tag {
-				case DSTRING_IUC_COMPANY_NAME:
-					tlv.Type = TLV_DSTRING
-					config.IucCompanyName = *tlv
-				case DSTRING_IUC_PRODUCT_NAME:
-					tlv.Type = TLV_DSTRING
-					config.IucProductName = *tlv
-				case DSTRING_IUC_INSTALLED_VERSION:
-					tlv.Type = TLV_DSTRING
-					config.IucInstalledVersion = *tlv
-				case DSTRING_IUC_SERVER_FILE_SITE:
-					tlv.Type = TLV_DSTRING
-					config.IucServerFileSite = append(config.IucServerFileSite, *tlv)
-				case DSTRING_IUC_WYUPDATE_SERVER_SITE:
-					tlv.Type = TLV_DSTRING
-					config.IucWyupdateServerSite = append(config.IucWyupdateServerSite, *tlv)
-				case DSTRING_IUC_HEADER_IMAGE_ALIGNMENT:
-					tlv.Type = TLV_DSTRING
-					config.IucHeaderImageAlignment = *tlv
-				case DSTRING_IUC_HEADER_TEXT_COLOR:
-					tlv.Type = TLV_DSTRING
-					config.IucHeaderTextColor = *tlv
-				case DSTRING_IUC_HEADER_FILENAME:
-					tlv.Type = TLV_DSTRING
-					config.IucHeaderFilename = *tlv
-				case DSTRING_IUC_SIDE_IMAGE_FILENAME:
-					tlv.Type = TLV_DSTRING
-					config.IucSideImageFilename = *tlv
-				case DSTRING_IUC_LANGUAGE_CULTURE:
-					tlv.Type = TLV_DSTRING
-					config.IucLanguageCulture = *tlv
-				case DSTRING_IUC_LANGUAGE_FILENAME:
-					tlv.Type = TLV_DSTRING
-					config.IucLanguageFilename = *tlv
-				case INT_IUC_HEADER_TEXT_INDENT:
-					tlv.Type = TLV_INT
-					config.IucHeaderTextIndent = *tlv
-				case BOOL_IUC_HIDE_HEADER_DIVIDER:
-					tlv.Type = TLV_BOOL
-					config.IucHideHeaderDivider = *tlv
-				case BOOL_IUC_CLOSE_WYUPDATE:
-					tlv.Type = TLV_BOOL
-					config.IucCloseWyupate = *tlv
-				case STRING_IUC_CUSTOM_TITLE_BAR:
-					tlv.Type = TLV_STRING
-					config.IucCustomTitleBar = *tlv
-				case STRING_IUC_PUBLIC_KEY:
-					tlv.Type = TLV_STRING
-					config.IucPublicKey = *tlv
-				case STRING_IUC_GUID:
-					tlv.Type = TLV_STRING
-					config.IucGUID = *tlv
-				default:
-					err = fmt.Errorf("crap")
-					return config, err
-				}
 			}
 		}
 	}
 	return config, nil
 }
 
-// WriteIUC writes a IUC file
-func WriteIUC(config ConfigIUC, path string) error {
+// writeIuc writes a IUC file
+func writeIuc(config ConfigIUC, path string) error {
 	f, err := os.Create(path)
 	if nil != err {
 		return err
@@ -250,59 +252,59 @@ func WriteIUC(config ConfigIUC, path string) error {
 	f.Write([]byte(IUC_HEADER))
 
 	// DSTRING_IUC_COMPANY_NAME:
-	WriteTLV(f, config.IucCompanyName)
+	writeTlv(f, config.IucCompanyName)
 
 	// DSTRING_IUC_PRODUCT_NAME:
-	WriteTLV(f, config.IucProductName)
+	writeTlv(f, config.IucProductName)
 
 	// STRING_IUC_GUID:
-	WriteTLV(f, config.IucGUID)
+	writeTlv(f, config.IucGUID)
 
 	// DSTRING_IUC_INSTALLED_VERSION:
-	WriteTLV(f, config.IucInstalledVersion)
+	writeTlv(f, config.IucInstalledVersion)
 
 	// DSTRING_IUC_SERVER_FILE_SITE
 	for _, s := range config.IucServerFileSite {
-		WriteTLV(f, s)
+		writeTlv(f, s)
 	}
 
 	// DSTRING_IUC_WYUPDATE_SERVER_SITE - NOT USED
 	for _, s := range config.IucWyupdateServerSite {
-		WriteTLV(f, s)
+		writeTlv(f, s)
 	}
 
 	// DSTRING_IUC_HEADER_IMAGE_ALIGNMENT
-	WriteTLV(f, config.IucHeaderImageAlignment)
+	writeTlv(f, config.IucHeaderImageAlignment)
 
 	// INT_IUC_HEADER_TEXT_INDENT
-	WriteTLV(f, config.IucHeaderTextIndent)
+	writeTlv(f, config.IucHeaderTextIndent)
 
 	// DSTRING_IUC_HEADER_TEXT_COLOR
-	WriteTLV(f, config.IucHeaderTextColor)
+	writeTlv(f, config.IucHeaderTextColor)
 
 	// DSTRING_IUC_HEADER_FILENAME
-	WriteTLV(f, config.IucHeaderFilename)
+	writeTlv(f, config.IucHeaderFilename)
 
 	// DSTRING_IUC_SIDE_IMAGE_FILENAME:
-	WriteTLV(f, config.IucSideImageFilename)
+	writeTlv(f, config.IucSideImageFilename)
 
 	// DSTRING_IUC_LANGUAGE_CULTURE:
-	WriteTLV(f, config.IucLanguageCulture)
+	writeTlv(f, config.IucLanguageCulture)
 
 	// BOOL_IUC_HIDE_HEADER_DIVIDER:
-	WriteTLV(f, config.IucHideHeaderDivider)
+	writeTlv(f, config.IucHideHeaderDivider)
 
 	// STRING_IUC_PUBLIC_KEY:
-	WriteTLV(f, config.IucPublicKey)
+	writeTlv(f, config.IucPublicKey)
 
 	// DSTRING_IUC_LANGUAGE_FILENAME - NOT USED
-	WriteTLV(f, config.IucLanguageFilename)
+	writeTlv(f, config.IucLanguageFilename)
 
 	// STRING_IUC_CUSTOM_TITLE_BAR - NOT USED
-	WriteTLV(f, config.IucCustomTitleBar)
+	writeTlv(f, config.IucCustomTitleBar)
 
 	// BOOL_IUC_CLOSE_WYUPDATE:
-	WriteTLV(f, config.IucCloseWyupate)
+	writeTlv(f, config.IucCloseWyupate)
 
 	err = binary.Write(f, binary.BigEndian, byte(END_IUC))
 	if nil != err {
@@ -334,7 +336,7 @@ func UpdateWYCWithNewVersionNumber(config ConfigIUC, origWYCFile string, version
 	for _, f := range files {
 		if filepath.Base(f) == IUCLIENT_IUC {
 			// overwrite this file with new IUC
-			err := WriteIUC(config, f)
+			err := writeIuc(config, f)
 			if nil != err {
 				return "", err
 			}
