@@ -142,10 +142,17 @@ func InstallUpdate(udt ConfigUDT, srcFiles []string, installDir string) error {
 	// stop services
 	for _, s := range udt.ServiceToStopBeforeUpdate {
 		svc := ValueToString(&s)
-		e := StopService(svc)
-		if nil != e {
-			e := fmt.Errorf("failed to stop %s; %v", svc, e)
+		service_running, err := IsServiceRunning(svc)
+		if nil != err {
+			e := fmt.Errorf("failed to get %s service status; %v", svc, err)
 			return e
+		}
+		if service_running {
+			e := StopService(svc)
+			if nil != e {
+				e := fmt.Errorf("failed to stop %s; %v", svc, e)
+				return e
+			}
 		}
 	}
 
