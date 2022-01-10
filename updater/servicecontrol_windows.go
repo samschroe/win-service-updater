@@ -4,11 +4,31 @@ package updater
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/mgr"
 )
+
+func DoesServiceExist(serviceName string) (bool, error) {
+	m, err := mgr.Connect()
+	if nil != err {
+		return false, err
+	}
+	defer m.Disconnect()
+
+	services, err := m.ListServices()
+	if nil != err {
+		return false, err
+	}
+	for _, name := range services {
+		if strings.ToLower(serviceName) == strings.ToLower(name) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
 
 // IsServiceRunning checks to see if a service is running
 func IsServiceRunning(serviceName string) (bool, error) {

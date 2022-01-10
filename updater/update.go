@@ -142,10 +142,24 @@ func InstallUpdate(udt ConfigUDT, srcFiles []string, installDir string) error {
 	// stop services
 	for _, s := range udt.ServiceToStopBeforeUpdate {
 		svc := ValueToString(&s)
-		e := StopService(svc)
-		if nil != e {
-			e := fmt.Errorf("failed to stop %s; %v", svc, e)
+		service_exists, err := DoesServiceExist(svc)
+		if nil != err {
+			e := fmt.Errorf("failed to lookup service %s; %v", svc, err)
 			return e
+		}
+		if service_exists {
+			service_running, err := IsServiceRunning(svc)
+			if nil != err {
+				e := fmt.Errorf("failed to get %s service status; %v", svc, err)
+				return e
+			}
+			if service_running {
+				e := StopService(svc)
+				if nil != e {
+					e := fmt.Errorf("failed to stop %s; %v", svc, e)
+					return e
+				}
+			}
 		}
 	}
 
@@ -160,10 +174,18 @@ func InstallUpdate(udt ConfigUDT, srcFiles []string, installDir string) error {
 	// start services
 	for _, s := range udt.ServiceToStartAfterUpdate {
 		svc := ValueToString(&s)
-		e := StartService(svc)
-		if nil != e {
-			e := fmt.Errorf("failed to start %s; %v", svc, e)
+		service_exists, err := DoesServiceExist(svc)
+		if err != nil {
+			e := fmt.Errorf("failed to lookup service %s; %v", svc, err)
 			return e
+		}
+		// don't try to start the service if it doesn't exist
+		if service_exists {
+			e := StartService(svc)
+			if nil != e {
+				e := fmt.Errorf("failed to start %s; %v", svc, e)
+				return e
+			}
 		}
 	}
 
