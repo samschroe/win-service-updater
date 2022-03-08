@@ -52,7 +52,7 @@ func Zip(archive string, files []string) {
 }
 
 func TestWYC(t *testing.T) {
-	origFile := "../test_files/client.1.0.0.wyc"
+	origFile := "./testdata/client.1.0.0.wyc"
 
 	info := Info{}
 	wyc, err := info.ParseWYC(origFile)
@@ -61,7 +61,7 @@ func TestWYC(t *testing.T) {
 }
 
 func TestWYC_GetWYSURLs(t *testing.T) {
-	origFile := "../test_files/client.1.0.0.wyc"
+	origFile := "./testdata/client.1.0.0.wyc"
 
 	args := Args{}
 
@@ -73,7 +73,7 @@ func TestWYC_GetWYSURLs(t *testing.T) {
 }
 
 func TestWYC_UpdateWYCWithNewVersion(t *testing.T) {
-	origFile := "../test_files/client.1.0.0.wyc"
+	origFile := "./testdata/client.1.0.0.wyc"
 
 	info := Info{}
 	wyc, err := info.ParseWYC(origFile)
@@ -89,7 +89,7 @@ func TestWYC_UpdateWYCWithNewVersion(t *testing.T) {
 }
 
 func TestWYC_WriteIUC(t *testing.T) {
-	origClientWYC := "../test_files/client.1.0.0.wyc"
+	origClientWYC := "./testdata/client.1.0.0.wyc"
 
 	// create a new uiclient.iuc and compare it to the one in the archive
 	info := Info{}
@@ -124,7 +124,7 @@ func TestWYC_WriteIUC(t *testing.T) {
 
 // TestWyc_setWycUrls ...
 func TestWyc_setWycUrls(t *testing.T) {
-	origClientWYC := "../test_files/client.1.0.0.wyc"
+	origClientWYC := "./testdata/client.1.0.0.wyc"
 
 	// create a new uiclient.iuc and compare it to the one in the archive
 	info := Info{}
@@ -161,7 +161,7 @@ func TestWyc_setWycUrls(t *testing.T) {
 
 // TestWyc_generateFile ...
 func TestWyc_generateFile(t *testing.T) {
-	origClientWYC := "../test_files/client.1.0.0.wyc"
+	origClientWYC := "./testdata/client.1.0.0.wyc"
 
 	// create a new uiclient.iuc and compare it to the one in the archive
 	info := Info{}

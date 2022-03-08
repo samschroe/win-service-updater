@@ -60,9 +60,9 @@ func TearDown(f string) {
 }
 
 func TestHandler_UpdateHandler_InvalidWYC(t *testing.T) {
-	wycFile := "../test_files/foo.wyc"
-	wysFile := "../test_files/widgetX.1.0.1.wys"
-	wyuFile := "../test_files/widgetX.1.0.1.wyu"
+	wycFile := "./testdata/foo.wyc"
+	wysFile := "./testdata/widgetX.1.0.1.wys"
+	wyuFile := "./testdata/widgetX.1.0.1.wyu"
 
 	// wys server
 	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -101,9 +101,9 @@ func TestHandler_UpdateHandler_InvalidWYC(t *testing.T) {
 }
 
 func TestHandler_UpdateHandler_download_WYS_error(t *testing.T) {
-	wycFile := "../test_files/client.1.0.1.wyc"
-	wysFile := "../test_files/widgetX.1.0.1.wys"
-	wyuFile := "../test_files/widgetX.1.0.1.wyu"
+	wycFile := "./testdata/client.1.0.1.wyc"
+	wysFile := "./testdata/widgetX.1.0.1.wys"
+	wyuFile := "./testdata/widgetX.1.0.1.wyu"
 
 	// wys server
 	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -139,9 +139,9 @@ func TestHandler_UpdateHandler_download_WYS_error(t *testing.T) {
 }
 
 func TestHandler_UpdateHandler_invalid_WYS_error(t *testing.T) {
-	wycFile := "../test_files/client.1.0.1.wyc"
-	// wysFile := "../test_files/widgetX.1.0.1.wys"
-	wyuFile := "../test_files/widgetX.1.0.1.wyu"
+	wycFile := "./testdata/client.1.0.1.wyc"
+	// wysFile := "./testdata/widgetX.1.0.1.wys"
+	wyuFile := "./testdata/widgetX.1.0.1.wyu"
 
 	// wys server
 	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -173,9 +173,9 @@ func TestHandler_UpdateHandler_invalid_WYS_error(t *testing.T) {
 }
 
 func TestHandler_UpdateHandler_download_WYU_error(t *testing.T) {
-	wycFile := "../test_files/client.1.0.1.wyc"
-	wysFile := "../test_files/widgetX.1.0.1.wys"
-	wyuFile := "../test_files/widgetX.1.0.1.wyu"
+	wycFile := "./testdata/client.1.0.1.wyc"
+	wysFile := "./testdata/widgetX.1.0.1.wys"
+	wyuFile := "./testdata/widgetX.1.0.1.wyu"
 
 	// wys server
 	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -211,9 +211,9 @@ func TestHandler_UpdateHandler_download_WYU_error(t *testing.T) {
 }
 
 func TestHandler_UpdateHandler_invalid_WYU_error(t *testing.T) {
-	wycFile := "../test_files/client.1.0.1.wyc"
-	wysFile := "../test_files/widgetX.1.0.1.wys"
-	// wyuFile := "../test_files/widgetX.1.0.1.wyu"
+	wycFile := "./testdata/client.1.0.1.wyc"
+	wysFile := "./testdata/widgetX.1.0.1.wys"
+	// wyuFile := "./testdata/widgetX.1.0.1.wyu"
 
 	// wys server
 	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -249,9 +249,9 @@ func TestHandler_UpdateHandler_invalid_WYU_error(t *testing.T) {
 }
 
 func TestHandler_UpdateHandler_update_not_signed(t *testing.T) {
-	wycFile := "../test_files/client.1.0.1.wyc"
-	wysFile := "../test_files/widgetX.1.0.1.wys"
-	wyuFile := "../test_files/widgetX.1.0.1.wyu"
+	wycFile := "./testdata/client.1.0.1.wyc"
+	wysFile := "./testdata/widgetX.1.0.1.wys"
+	wyuFile := "./testdata/widgetX.1.0.1.wyu"
 
 	// wys server
 	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -287,9 +287,9 @@ func TestHandler_UpdateHandler_update_not_signed(t *testing.T) {
 }
 
 func TestHandler_UpdateHandler_signature_verification_error(t *testing.T) {
-	wycFile := "../test_files/client.1.0.1.wyc"
-	wysFile := "../test_files/widgetX.1.0.1.wys"
-	wyuFile := "../test_files/widgetX.1.0.1.wyu"
+	wycFile := "./testdata/client.1.0.1.wyc"
+	wysFile := "./testdata/widgetX.1.0.1.wys"
+	wyuFile := "./testdata/widgetX.1.0.1.wyu"
 
 	// wys server
 	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -325,9 +325,9 @@ func TestHandler_UpdateHandler_signature_verification_error(t *testing.T) {
 }
 
 func TestHandler_UpdateHandler_checksum_error(t *testing.T) {
-	wycFile := "../test_files/client.1.0.1.wyc"
-	wysFile := "../test_files/widgetX.1.0.1.wys"
-	wyuFile := "../test_files/widgetX.1.0.1.wyu"
+	wycFile := "./testdata/client.1.0.1.wyc"
+	wysFile := "./testdata/widgetX.1.0.1.wys"
+	wyuFile := "./testdata/widgetX.1.0.1.wyu"
 
 	// wys server
 	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -366,9 +366,9 @@ func TestHandler_UpdateHandler_checksum_error(t *testing.T) {
 }
 
 func TestHandler_UpdateHandler_no_updtdetails_file_error(t *testing.T) {
-	wycFile := "../test_files/client.1.0.1.wyc"
-	wysFile := "../test_files/widgetX.1.0.1.wys"
-	wyuFile := "../test_files/test.zip"
+	wycFile := "./testdata/client.1.0.1.wyc"
+	wysFile := "./testdata/widgetX.1.0.1.wys"
+	wyuFile := "./testdata/test.zip"
 
 	// wys server
 	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -408,8 +408,8 @@ func TestHandler_UpdateHandler_no_updtdetails_file_error(t *testing.T) {
 }
 
 func TestHandler_CheckForUpdateHandler_no_update(t *testing.T) {
-	wycFile := "../test_files/client.1.0.1.wyc"
-	wysFile := "../test_files/widgetX.1.0.1.wys"
+	wycFile := "./testdata/client.1.0.1.wyc"
+	wysFile := "./testdata/widgetX.1.0.1.wys"
 
 	// wys server
 	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -437,8 +437,8 @@ func TestHandler_CheckForUpdateHandler_no_update(t *testing.T) {
 }
 
 func TestHandler_CheckForUpdateHandler_invalid_WYC_file(t *testing.T) {
-	wycFile := "../test_files/foo"
-	wysFile := "../test_files/widgetX.1.0.1.wys"
+	wycFile := "./testdata/foo"
+	wysFile := "./testdata/widgetX.1.0.1.wys"
 
 	// wys server
 	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -466,7 +466,7 @@ func TestHandler_CheckForUpdateHandler_invalid_WYC_file(t *testing.T) {
 }
 
 func TestHandler_CheckForUpdateHandler_http_error(t *testing.T) {
-	wycFile := "../test_files/client.1.0.1.wyc"
+	wycFile := "./testdata/client.1.0.1.wyc"
 
 	var args Args
 	args.Cdata = wycFile
@@ -485,7 +485,7 @@ func TestHandler_CheckForUpdateHandler_http_error(t *testing.T) {
 }
 
 func TestHandler_CheckForUpdateHandler_invalid_WYS_file(t *testing.T) {
-	wycFile := "../test_files/client.1.0.1.wyc"
+	wycFile := "./testdata/client.1.0.1.wyc"
 
 	// wys server
 	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
