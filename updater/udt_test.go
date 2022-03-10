@@ -14,7 +14,7 @@ func TestUDT(t *testing.T) {
 	tmpfile := GenerateTempFile()
 	defer os.Remove(tmpfile)
 
-	orig := "../test_files/updtdetails.udt"
+	orig := "./testdata/updtdetails.udt"
 	udt, err := ParseUDT(orig)
 	assert.Nil(t, err)
 

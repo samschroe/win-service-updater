@@ -12,7 +12,7 @@ func TestFile_Unzip(t *testing.T) {
 	assert.Nil(t, err)
 	defer os.RemoveAll(tempDir)
 
-	zipFile := "../test_files/test.zip"
+	zipFile := "./testdata/test.zip"
 	_, files, err := Unzip(zipFile, tempDir)
 	assert.Nil(t, err)
 	// there are 4 files in the test.zip

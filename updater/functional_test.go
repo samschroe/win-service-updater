@@ -51,7 +51,7 @@ func fixupTestURL(uri string, testURL string) string {
 
 func TestFunctional_CompareVersions(t *testing.T) {
 	info := Info{}
-	wysFile := "../test_files/widgetX.1.0.1.wys"
+	wysFile := "./testdata/widgetX.1.0.1.wys"
 
 	argv := []string{"", "-urlargs=12345:67890"}
 	args, err := ParseArgs(argv)
@@ -66,8 +66,8 @@ func TestFunctional_CompareVersions(t *testing.T) {
 
 func TestFunctional_SameVersion(t *testing.T) {
 	info := Info{}
-	wycFile := "../test_files/client.1.0.1.wyc"
-	wysFile := "../test_files/widgetX.1.0.1.wys"
+	wycFile := "./testdata/client.1.0.1.wyc"
+	wysFile := "./testdata/widgetX.1.0.1.wys"
 
 	tmpDir, instDir := Setup()
 	defer os.RemoveAll(tmpDir)
@@ -106,9 +106,9 @@ func TestFunctional_SameVersion(t *testing.T) {
 
 func TestFunctional_URLArgs(t *testing.T) {
 	info := Info{}
-	wycFile := "../test_files/client.1.0.0.wyc"
-	wysFile := "../test_files/widgetX.1.0.1.wys"
-	wyuFile := "../test_files/widgetX.1.0.1.wyu"
+	wycFile := "./testdata/client.1.0.0.wyc"
+	wysFile := "./testdata/widgetX.1.0.1.wys"
+	wyuFile := "./testdata/widgetX.1.0.1.wyu"
 
 	auth := "12345:67890"
 
@@ -170,9 +170,9 @@ func TestFunctional_URLArgs(t *testing.T) {
 
 func TestFunctional_UpdateWithRollback(t *testing.T) {
 	info := Info{}
-	wycFile := "../test_files/client.1.0.0.wyc"
-	wysFile := "../test_files/widgetX.1.0.1.wys"
-	wyuFile := "../test_files/widgetX.1.0.1.wyu"
+	wycFile := "./testdata/client.1.0.0.wyc"
+	wysFile := "./testdata/widgetX.1.0.1.wys"
+	wyuFile := "./testdata/widgetX.1.0.1.wyu"
 
 	auth := "12345:67890"
 

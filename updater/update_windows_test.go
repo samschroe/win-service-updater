@@ -14,7 +14,7 @@ func TestUpdate(t *testing.T) {
 	tempInstall := GetTempDir()
 	defer os.RemoveAll(tempInstall)
 
-	src := "../test_files/widgetX.1.0.1.wyu"
+	src := "./testdata/widgetX.1.0.1.wyu"
 	_, files, err := Unzip(src, tempExtract)
 	assert.Nil(t, err)
 
