@@ -181,6 +181,7 @@ func UpdateHandler(infoer Infoer, args Args) (int, error) {
 	if nil != err {
 		return EXIT_ERROR, err
 	}
+	defer DeleteDirectory(backupDir)
 
 	// TODO is there a way to clean this up
 	err = InstallUpdate(udt, updates, instDir)

@@ -95,17 +95,20 @@ func GetUpdateDetails(extractedFiles []string) (udt ConfigUDT, updates []string,
 // BackupFiles copies all the files to be updated in `srcDir` to a `backupDir`
 // `backupDir` is returned
 func BackupFiles(updates []string, srcDir string) (backupDir string, err error) {
-	backupDir, err = ioutil.TempDir("", "prefix")
+	backupDir, err = CreateTempDir()
 	if err != nil {
 		log.Fatal(err)
 	}
-	os.Mkdir(backupDir, 0777)
+	err = os.Mkdir(backupDir, 0777)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// backup the files we are about to update
 	for _, f := range updates {
 		orig := path.Join(srcDir, filepath.Base(f))
 		back := path.Join(backupDir, filepath.Base(f))
-		_, err = CopyFile(orig, back)
+		err = MoveFile(orig, back)
 		if nil != err {
 			return "", err
 		}
@@ -128,7 +131,7 @@ func RollbackFiles(backupDir string, dstDir string) (err error) {
 	for _, f := range files {
 		orig := path.Join(backupDir, path.Base(f.Name()))
 		dstFile := path.Join(dstDir, path.Base(f.Name()))
-		_, err = CopyFile(orig, dstFile)
+		err = MoveFile(orig, dstFile)
 		if nil != err {
 			return err
 		}
@@ -139,6 +142,14 @@ func RollbackFiles(backupDir string, dstDir string) (err error) {
 
 // InstallUpdate start/stops service and moves the new files into the `installDir`
 func InstallUpdate(udt ConfigUDT, srcFiles []string, installDir string) error {
+	// move the files into the "base directory"
+	for _, f := range srcFiles {
+		err := MoveFile(f, installDir)
+		if err != nil {
+			return err
+		}
+	}
+
 	// stop services
 	for _, s := range udt.ServiceToStopBeforeUpdate {
 		svc := ValueToString(&s)
@@ -160,14 +171,6 @@ func InstallUpdate(udt ConfigUDT, srcFiles []string, installDir string) error {
 					return e
 				}
 			}
-		}
-	}
-
-	// move the files into the "base directory"
-	for _, f := range srcFiles {
-		err := MoveFile(f, installDir)
-		if err != nil {
-			return err
 		}
 	}
 
