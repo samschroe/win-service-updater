@@ -90,7 +90,7 @@ func UpdateHandler(infoer Infoer, args Args) (int, error) {
 		err = fmt.Errorf("no temp dir; %v", err)
 		return EXIT_ERROR, err
 	}
-	defer os.RemoveAll(tmpDir)
+	defer DeleteDirectory(tmpDir)
 
 	// parse the WYC file for get update site, installed version, etc.
 	iuc, err := infoer.ParseWYC(args.Cdata)
@@ -178,10 +178,12 @@ func UpdateHandler(infoer Infoer, args Args) (int, error) {
 
 	// backup the existing files that will be overwritten by the update
 	backupDir, err := BackupFiles(updates, instDir)
+	defer DeleteDirectory(backupDir)
 	if nil != err {
+		// Errors from rollback may occur from missing expected files - ignore
+		RollbackFiles(backupDir, instDir)
 		return EXIT_ERROR, err
 	}
-	defer DeleteDirectory(backupDir)
 
 	// TODO is there a way to clean this up
 	err = InstallUpdate(udt, updates, instDir)

@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/hashicorp/go-multierror"
 )
 
 const (
@@ -99,18 +101,14 @@ func BackupFiles(updates []string, srcDir string) (backupDir string, err error) 
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = os.Mkdir(backupDir, 0777)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	// backup the files we are about to update
 	for _, f := range updates {
 		orig := path.Join(srcDir, filepath.Base(f))
 		back := path.Join(backupDir, filepath.Base(f))
-		err = MoveFile(orig, back)
+		err = MoveFileIgnoreMissing(orig, back)
 		if nil != err {
-			return "", err
+			return backupDir, err
 		}
 	}
 
@@ -127,24 +125,25 @@ func RollbackFiles(backupDir string, dstDir string) (err error) {
 	if err != nil {
 		return err
 	}
+	var errs *multierror.Error
 
 	for _, f := range files {
 		orig := path.Join(backupDir, path.Base(f.Name()))
 		dstFile := path.Join(dstDir, path.Base(f.Name()))
-		err = MoveFile(orig, dstFile)
+		err = MoveFileIgnoreMissing(orig, dstFile)
 		if nil != err {
-			return err
+			errs = multierror.Append(errs, err)
 		}
 	}
 
-	return nil
+	return errs.ErrorOrNil()
 }
 
 // InstallUpdate start/stops service and moves the new files into the `installDir`
 func InstallUpdate(udt ConfigUDT, srcFiles []string, installDir string) error {
 	// move the files into the "base directory"
 	for _, f := range srcFiles {
-		err := MoveFile(f, installDir)
+		err := MoveFileIgnoreMissing(f, path.Join(installDir, filepath.Base(f)))
 		if err != nil {
 			return err
 		}
@@ -191,15 +190,21 @@ func InstallUpdate(udt ConfigUDT, srcFiles []string, installDir string) error {
 			}
 		}
 	}
-
 	return nil
 }
 
-// MoveFile moves a `file` to `dstDir`
-func MoveFile(file string, dstDir string) error {
-	dst := filepath.Join(dstDir, filepath.Base(file))
+// MoveFile moves a `file` to `dst`
+func MoveFile(file string, dst string) error {
 	// Rename() returns *LinkError if it errs
 	return os.Rename(file, dst)
+}
+
+// MoveFileIgnoreMissing will not return an error if `src` does not exist
+func MoveFileIgnoreMissing(src string, dst string) error {
+	if !fileExists(src) {
+		return nil
+	}
+	return os.Rename(src, dst)
 }
 
 // CopyFile copies `src` to `dst`
