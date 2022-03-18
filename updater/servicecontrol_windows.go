@@ -1,3 +1,4 @@
+//go:build windows
 // +build windows
 
 package updater
@@ -13,13 +14,13 @@ import (
 
 func DoesServiceExist(serviceName string) (bool, error) {
 	m, err := mgr.Connect()
-	if nil != err {
+	if err != nil {
 		return false, err
 	}
 	defer m.Disconnect()
 
 	services, err := m.ListServices()
-	if nil != err {
+	if err != nil {
 		return false, err
 	}
 	for _, name := range services {
@@ -34,21 +35,21 @@ func DoesServiceExist(serviceName string) (bool, error) {
 func IsServiceRunning(serviceName string) (bool, error) {
 	// open service manager, requires admin
 	m, err := mgr.Connect()
-	if nil != err {
+	if err != nil {
 		return false, err
 	}
 	defer m.Disconnect()
 
 	// open the service
 	s, err := m.OpenService(serviceName)
-	if nil != err {
+	if err != nil {
 		return false, err
 	}
 	defer s.Close()
 
 	// Interrogate service
 	status, err := s.Control(svc.Interrogate)
-	if nil != err {
+	if err != nil {
 		// Control() will return an error if the service is not running
 		// so just return false
 		return false, nil
@@ -88,6 +89,7 @@ func StartService(serviceName string) error {
 
 // StopService stops a service
 func StopService(serviceName string) error {
+
 	// open service manager, requires admin
 	m, err := mgr.Connect()
 	if nil != err {
@@ -97,24 +99,35 @@ func StopService(serviceName string) error {
 
 	// open the service
 	s, err := m.OpenService(serviceName)
-	if nil != err {
+	if err != nil {
 		return err
 	}
 	defer s.Close()
 
 	// stop the service
 	_, err = s.Control(svc.Stop)
-	if nil != err {
+	if err != nil {
 		return err
 	}
-	// allow time to stop
-	time.Sleep(5 * time.Second)
 
-	status, err := s.Query()
-	if nil != err {
-		// Query() will return an error if the service is not running
-		// so just return err
-		return err
+	var status svc.Status
+	var retries int = 3
+	var sleep time.Duration = 5 * time.Second
+
+	for i := 0; i < retries; i++ {
+		running, _ := IsServiceRunning(serviceName)
+
+		if running != true {
+			// Returns nil as service is no longer running
+			return nil
+		}
+
+		// set status for exit condition
+		status, _ = s.Query() // what is the status of hupdater
+
+		// Wait for service to stop
+		time.Sleep(sleep)
+		sleep *= 5
 	}
 
 	if status.State != svc.Stopped {
