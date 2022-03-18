@@ -3,8 +3,10 @@ package updater
 import (
 	"crypto/rsa"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
+	"strings"
 )
 
 // Infoer interface used to make testing easier
@@ -29,6 +31,14 @@ func Handler() int {
 	}
 
 	info := Info{}
+
+	// cleanup any old tmp directories on every run
+	items, _ := ioutil.ReadDir(GetExeDir())
+	for _, item := range items {
+		if item.IsDir() && strings.HasPrefix(item.Name(), TempDirPrefix()) {
+			DeleteDirectory(item.Name())
+		}
+	}
 
 	// check for updates
 	if args.Quickcheck && args.Justcheck {
