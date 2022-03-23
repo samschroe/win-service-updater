@@ -3,8 +3,10 @@ package updater
 import (
 	"crypto/rsa"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
+	"strings"
 )
 
 // Infoer interface used to make testing easier
@@ -29,6 +31,14 @@ func Handler() int {
 	}
 
 	info := Info{}
+
+	// cleanup any old tmp directories on every run
+	items, _ := ioutil.ReadDir(GetExeDir())
+	for _, item := range items {
+		if item.IsDir() && strings.HasPrefix(item.Name(), TempDirPrefix()) {
+			DeleteDirectory(item.Name())
+		}
+	}
 
 	// check for updates
 	if args.Quickcheck && args.Justcheck {
@@ -90,7 +100,7 @@ func UpdateHandler(infoer Infoer, args Args) (int, error) {
 		err = fmt.Errorf("no temp dir; %v", err)
 		return EXIT_ERROR, err
 	}
-	defer os.RemoveAll(tmpDir)
+	defer DeleteDirectory(tmpDir)
 
 	// parse the WYC file for get update site, installed version, etc.
 	iuc, err := infoer.ParseWYC(args.Cdata)
@@ -178,7 +188,10 @@ func UpdateHandler(infoer Infoer, args Args) (int, error) {
 
 	// backup the existing files that will be overwritten by the update
 	backupDir, err := BackupFiles(updates, instDir)
+	defer DeleteDirectory(backupDir)
 	if nil != err {
+		// Errors from rollback may occur from missing expected files - ignore
+		RollbackFiles(backupDir, instDir)
 		return EXIT_ERROR, err
 	}
 

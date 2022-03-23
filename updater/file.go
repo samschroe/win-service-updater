@@ -38,9 +38,13 @@ func SHA1Hash(filePath string) ([]byte, error) {
 	return hash.Sum(nil), nil
 }
 
+func TempDirPrefix() string {
+	return "hupdate_tmp_"
+}
+
 // CreateTempDir returns a temporary directory name and error if the creation failed
 func CreateTempDir() (tempDir string, err error) {
-	tempDir, err = ioutil.TempDir("", "updater")
+	tempDir, err = ioutil.TempDir(GetExeDir(), TempDirPrefix())
 	if nil != err {
 		return "", err
 	}
