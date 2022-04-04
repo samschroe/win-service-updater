@@ -31,7 +31,7 @@ func DoesServiceExist(serviceName string) (bool, error) {
 	return false, nil
 }
 
-// IsServiceRunning checks to see if a service is running
+// IsServiceRunning checks to see if a service is in the "running" state
 func IsServiceRunning(serviceName string) (bool, error) {
 	// open service manager, requires admin
 	m, err := mgr.Connect()
@@ -110,30 +110,20 @@ func StopService(serviceName string) error {
 		return err
 	}
 
+	// services may request up to 125 seconds of time before being killed
+	// https://docs.microsoft.com/en-us/windows/win32/api/winsvc/nc-winsvc-lphandler_function#remarks
+	var retries int = 130
 	var status svc.Status
-	var retries int = 3
-	var sleep time.Duration = 5 * time.Second
 
 	for i := 0; i < retries; i++ {
-		running, _ := IsServiceRunning(serviceName)
+		time.Sleep(1 * time.Second)
+		status, err = s.Query()
 
-		if running != true {
+		if err == nil && status.State == svc.Stopped {
 			// Returns nil as service is no longer running
 			return nil
 		}
-
-		// set status for exit condition
-		status, _ = s.Query() // what is the status of hupdater
-
-		// Wait for service to stop
-		time.Sleep(sleep)
-		sleep *= 5
 	}
 
-	if status.State != svc.Stopped {
-		err = fmt.Errorf("'%s' did not stop; status: %+v", serviceName, status)
-		return err
-	}
-
-	return nil
+	return fmt.Errorf("'%s' did not stop in time; status: %+v", serviceName, status)
 }
