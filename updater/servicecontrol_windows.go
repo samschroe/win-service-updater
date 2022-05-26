@@ -4,10 +4,12 @@
 package updater
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
+	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/mgr"
 )
@@ -31,39 +33,47 @@ func DoesServiceExist(serviceName string) (bool, error) {
 	return false, nil
 }
 
-// IsServiceRunning checks to see if a service is in the "running" state
-func IsServiceRunning(serviceName string) (bool, error) {
+func GetServiceState(serviceName string) (state svc.State, e error) {
+	state = svc.Stopped
+
 	// open service manager, requires admin
 	m, err := mgr.Connect()
 	if err != nil {
-		return false, err
+		return state, err
 	}
 	defer m.Disconnect()
 
 	// open the service
 	s, err := m.OpenService(serviceName)
 	if err != nil {
-		return false, err
+		return state, err
 	}
 	defer s.Close()
 
 	// Interrogate service
-	status, err := s.Control(svc.Interrogate)
-	if err != nil {
-		// Control() will return an error if the service is not running
-		// so just return false
-		return false, nil
+	status, e := s.Control(svc.Interrogate)
+	if e != nil {
+		if errors.Is(e, windows.ERROR_SERVICE_NOT_ACTIVE) {
+			return svc.Stopped, nil
+		}
+		return state, e
 	}
 
-	if status.State != svc.Running {
-		return false, nil
-	}
-
-	return true, nil
+	return status.State, e
 }
 
 // StartService starts a service
 func StartService(serviceName string) error {
+	state, e := GetServiceState(serviceName)
+
+	if e != nil {
+		return e
+	}
+
+	if state == svc.Running {
+		return nil
+	}
+
 	// open service manager, requires admin
 	m, err := mgr.Connect()
 	if err != nil {
@@ -84,11 +94,34 @@ func StartService(serviceName string) error {
 		return err
 	}
 
-	return nil
+	// Services do not immediately start.
+	var waitForStatusUpdate int = 5
+	var status svc.Status
+
+	for i := 0; i < waitForStatusUpdate; i++ {
+		time.Sleep(1 * time.Second)
+		status, err := GetServiceState(serviceName)
+
+		if err == nil && status == svc.Running {
+			// Returns nil as service is running
+			return nil
+		}
+	}
+
+	return fmt.Errorf("'%s' did not start in time; status: %+v", serviceName, status)
 }
 
 // StopService stops a service
 func StopService(serviceName string) error {
+	state, e := GetServiceState(serviceName)
+
+	if e != nil {
+		return e
+	}
+
+	if state == svc.Stopped {
+		return nil
+	}
 
 	// open service manager, requires admin
 	m, err := mgr.Connect()
@@ -117,9 +150,9 @@ func StopService(serviceName string) error {
 
 	for i := 0; i < retries; i++ {
 		time.Sleep(1 * time.Second)
-		status, err = s.Query()
+		status, err := GetServiceState(serviceName)
 
-		if err == nil && status.State == svc.Stopped {
+		if err == nil && status == svc.Stopped {
 			// Returns nil as service is no longer running
 			return nil
 		}
