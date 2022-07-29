@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const WYU_FILE_ADLER32 = 3025300213
+
 type FakeUpdateInfo struct {
 	ConfigWYS ConfigWYS
 	ModifyWYS bool
@@ -60,6 +62,8 @@ func TearDown(f string) {
 }
 
 func TestHandler_UpdateHandler_InvalidWYC(t *testing.T) {
+	os.Remove(lastWyuFilePath)
+
 	wycFile := "./testdata/foo.wyc"
 	wysFile := "./testdata/widgetX.1.0.1.wys"
 	wyuFile := "./testdata/widgetX.1.0.1.wyu"
@@ -101,6 +105,8 @@ func TestHandler_UpdateHandler_InvalidWYC(t *testing.T) {
 }
 
 func TestHandler_UpdateHandler_download_WYS_error(t *testing.T) {
+	os.Remove(lastWyuFilePath)
+
 	wycFile := "./testdata/client.1.0.1.wyc"
 	wysFile := "./testdata/widgetX.1.0.1.wys"
 	wyuFile := "./testdata/widgetX.1.0.1.wyu"
@@ -139,6 +145,8 @@ func TestHandler_UpdateHandler_download_WYS_error(t *testing.T) {
 }
 
 func TestHandler_UpdateHandler_invalid_WYS_error(t *testing.T) {
+	os.Remove(lastWyuFilePath)
+
 	wycFile := "./testdata/client.1.0.1.wyc"
 	// wysFile := "./testdata/widgetX.1.0.1.wys"
 	wyuFile := "./testdata/widgetX.1.0.1.wyu"
@@ -173,6 +181,8 @@ func TestHandler_UpdateHandler_invalid_WYS_error(t *testing.T) {
 }
 
 func TestHandler_UpdateHandler_download_WYU_error(t *testing.T) {
+	os.Remove(lastWyuFilePath)
+
 	wycFile := "./testdata/client.1.0.1.wyc"
 	wysFile := "./testdata/widgetX.1.0.1.wys"
 	wyuFile := "./testdata/widgetX.1.0.1.wyu"
@@ -211,6 +221,8 @@ func TestHandler_UpdateHandler_download_WYU_error(t *testing.T) {
 }
 
 func TestHandler_UpdateHandler_invalid_WYU_error(t *testing.T) {
+	os.Remove(lastWyuFilePath)
+
 	wycFile := "./testdata/client.1.0.1.wyc"
 	wysFile := "./testdata/widgetX.1.0.1.wys"
 	// wyuFile := "./testdata/widgetX.1.0.1.wyu"
@@ -244,11 +256,12 @@ func TestHandler_UpdateHandler_invalid_WYU_error(t *testing.T) {
 
 	exitCode, err := UpdateHandler(finfo, args)
 	assert.Equal(t, EXIT_ERROR, exitCode)
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "error unzipping")
+	assert.Error(t, err)
 }
 
 func TestHandler_UpdateHandler_update_not_signed(t *testing.T) {
+	os.Remove(lastWyuFilePath)
+
 	wycFile := "./testdata/client.1.0.1.wyc"
 	wysFile := "./testdata/widgetX.1.0.1.wys"
 	wyuFile := "./testdata/widgetX.1.0.1.wyu"
@@ -279,6 +292,7 @@ func TestHandler_UpdateHandler_update_not_signed(t *testing.T) {
 	finfo := FakeUpdateInfo{}
 	finfo.ModifyWYS = true
 	finfo.ConfigWYS.FileSha1 = make([]byte, 0)
+	finfo.ConfigWYS.UpdateFileAdler32 = WYU_FILE_ADLER32
 
 	exitCode, err := UpdateHandler(finfo, args)
 	assert.Equal(t, EXIT_ERROR, exitCode)
@@ -287,6 +301,8 @@ func TestHandler_UpdateHandler_update_not_signed(t *testing.T) {
 }
 
 func TestHandler_UpdateHandler_signature_verification_error(t *testing.T) {
+	os.Remove(lastWyuFilePath)
+
 	wycFile := "./testdata/client.1.0.1.wyc"
 	wysFile := "./testdata/widgetX.1.0.1.wys"
 	wyuFile := "./testdata/widgetX.1.0.1.wyu"
@@ -317,6 +333,7 @@ func TestHandler_UpdateHandler_signature_verification_error(t *testing.T) {
 	finfo := FakeUpdateInfo{}
 	finfo.ModifyWYS = true
 	finfo.ConfigWYS.FileSha1 = []byte("invalid")
+	finfo.ConfigWYS.UpdateFileAdler32 = WYU_FILE_ADLER32
 
 	exitCode, err := UpdateHandler(finfo, args)
 	assert.Equal(t, EXIT_ERROR, exitCode)
@@ -325,6 +342,8 @@ func TestHandler_UpdateHandler_signature_verification_error(t *testing.T) {
 }
 
 func TestHandler_UpdateHandler_checksum_error(t *testing.T) {
+	os.Remove(lastWyuFilePath)
+
 	wycFile := "./testdata/client.1.0.1.wyc"
 	wysFile := "./testdata/widgetX.1.0.1.wys"
 	wyuFile := "./testdata/widgetX.1.0.1.wyu"
@@ -333,7 +352,7 @@ func TestHandler_UpdateHandler_checksum_error(t *testing.T) {
 	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		dat, err := ioutil.ReadFile(wysFile)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		w.Write(dat)
 	}))
 	defer tsWYS.Close()
@@ -342,7 +361,7 @@ func TestHandler_UpdateHandler_checksum_error(t *testing.T) {
 	tsWYU := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		dat, err := ioutil.ReadFile(wyuFile)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		w.Write(dat)
 	}))
 	defer tsWYU.Close()
@@ -361,7 +380,9 @@ func TestHandler_UpdateHandler_checksum_error(t *testing.T) {
 
 	exitCode, err := UpdateHandler(finfo, args)
 	assert.Equal(t, EXIT_ERROR, exitCode)
-	assert.NotNil(t, err)
+	if err == nil {
+		assert.FailNow(t, "Expected err from UpdateHandler")
+	}
 	assert.Contains(t, err.Error(), "failed the Adler32 validation.")
 }
 

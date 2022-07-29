@@ -74,7 +74,7 @@ func Handler() int {
 		}
 
 		rc, err := UpdateHandler(info, (args))
-		if nil != err {
+		if err != nil {
 			if args.Debug {
 				fmt.Println(err.Error())
 			}
@@ -128,10 +128,10 @@ func UpdateHandler(infoer Infoer, args Args) (int, error) {
 	// fmt.Println("new ", wys.VersionToUpdate)
 
 	// download WYU (this is the archive with the updated files)
+
 	fp = fmt.Sprintf("%s/wyu", tmpDir)
-	urls = wys.GetWYUURLs(args)
-	err = DownloadFile(urls, fp)
-	if nil != err {
+
+	if err := wys.getWyuFile(args, fp); err != nil {
 		return EXIT_ERROR, err
 	}
 
@@ -158,15 +158,6 @@ func UpdateHandler(infoer Infoer, args Args) (int, error) {
 		err = VerifyHash(&rsa, sha1hash, wys.FileSha1)
 		if nil != err {
 			err = fmt.Errorf("The downloaded file \"%s\" is not signed. %v", fp, err)
-			return EXIT_ERROR, err
-		}
-	}
-
-	// adler32 checksum
-	if wys.UpdateFileAdler32 != 0 {
-		v := VerifyAdler32Checksum(wys.UpdateFileAdler32, fp)
-		if v != true {
-			err = fmt.Errorf("The downloaded file \"%s\" failed the Adler32 validation.", fp)
 			return EXIT_ERROR, err
 		}
 	}
