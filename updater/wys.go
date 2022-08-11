@@ -8,8 +8,11 @@ package updater
 import (
 	"archive/zip"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -212,4 +215,89 @@ func (wys ConfigWYS) GetWYUURLs(args Args) (urls []string) {
 		urls = append(urls, u)
 	}
 	return urls
+}
+
+var lastWyuFilePath string
+
+// lastWyuDownload returns the pathname for the wyu cache. This file
+// will contain the most recently downloaded wyu file
+func (wys ConfigWYS) lastWyuDownload() string {
+	// small efficiency hack that allows us to easily test
+	if lastWyuFilePath != "" {
+		return lastWyuFilePath
+	}
+	const lastWyuFileName = "last_wyu_download"
+
+	instDir := GetExeDir()
+	lastWyuFilePath = filepath.Join(instDir, lastWyuFileName)
+
+	return lastWyuFilePath
+}
+
+// copyFile is a utility function to copy one file to another
+func copyFile(src, dst string) error {
+	source, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer source.Close()
+
+	destination, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer destination.Close()
+	_, err = io.Copy(destination, source)
+	return err
+}
+
+// getWyuFile returns the wyu file identified in the ConfigWYS into
+// the fp location. It checks to see if we have a previously
+// downloaded wyu file and verifies that it matches the adler32
+// checksum present in the ConfigWYS struct
+func (wys ConfigWYS) getWyuFile(args Args, fp string) error {
+	lastWyuDownload := wys.lastWyuDownload()
+
+	_, err := os.Stat(lastWyuDownload)
+
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		// if there was a stat error and it is anything but an
+		// ErrNotExist then return that error
+		return err
+	}
+
+	// err == nil means the file exists. If the UpdateFileAdler32
+	// matches then just copy the cached file
+	if err == nil && VerifyAdler32Checksum(wys.UpdateFileAdler32, lastWyuDownload) {
+		if err := copyFile(lastWyuDownload, fp); err == nil {
+			LogOutputInfoMsg(args, "Reusing cached WYU file")
+			return nil
+		}
+		// if the copy file fails fall through to downloading
+		// the file
+	}
+
+	// if we get here lastWyuDownload does not exist, the adler32
+	// mismatched, or we could not copy the cached file.  Download
+	// the wyu file and copy it to the lastWyuDownload (cached
+	// location)
+	urls := wys.GetWYUURLs(args)
+	err = DownloadFile(urls, fp)
+
+	// check to make sure the downloaded file matches the adler32
+	// checksum
+	if err == nil {
+		if VerifyAdler32Checksum(wys.UpdateFileAdler32, fp) {
+			// if this copy fails log the error message
+			// but still return success (no error).
+			if err := copyFile(fp, lastWyuDownload); err != nil {
+				LogOutputInfoMsg(args, fmt.Sprintf("Error caching WYU file: %v", err))
+			}
+		} else {
+			err = fmt.Errorf(`The downloaded file "%s" failed the Adler32 validation.`, fp)
+		}
+
+	}
+
+	return err
 }

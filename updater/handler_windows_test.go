@@ -4,12 +4,15 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestHandler_UpdateHandler(t *testing.T) {
+	os.Remove(lastWyuFilePath)
+
 	wycFile := "./testdata/client.1.0.1.wyc"
 	wysFile := "./testdata/widgetX.1.0.1.wys"
 	wyuFile := "./testdata/widgetX.1.0.1.wyu"
