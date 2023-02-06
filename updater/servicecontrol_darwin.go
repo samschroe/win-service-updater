@@ -5,6 +5,11 @@ import (
 	"os/exec"
 )
 
+// Stubbed in function so that tests pass on Darwin
+func DoesServiceExist(serviceName string) (bool, error) {
+	return false, nil
+}
+
 // launchctl is a helper method to execute the MacOS launchctl
 // executable. That executable is used to control services on MacOS.
 func launchctl(cmdAndArgs ...string) error {
@@ -15,9 +20,7 @@ func launchctl(cmdAndArgs ...string) error {
 	if err != nil {
 		return err
 	}
-
 	return nil
-
 }
 
 // amIAdmin return whether or not user running the program is root
@@ -42,11 +45,9 @@ func IsServiceRunning(serviceName string) (bool, error) {
 // directory
 func StartService(servicePlist string) error {
 	err := launchctl("bootstrap", "system", servicePlist)
-
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 

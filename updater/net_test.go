@@ -1,6 +1,7 @@
 package updater
 
 import (
+	"github.com/huntresslabs/win-service-updater/updater/useragent"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -29,6 +30,7 @@ func TestNet_HTTPGetFile_Nil_File(t *testing.T) {
 
 	// hold connection open to longer than TimeoutClient
 	server1 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, useragent.GetUserAgentString(), r.Header.Get("User-Agent"))
 		w.WriteHeader(http.StatusOK)
 		dat, err := ioutil.ReadFile(wysFile)
 		assert.Nil(t, err)
@@ -46,11 +48,13 @@ func TestNet_DownloadFile_Success(t *testing.T) {
 
 	// first URL fails, second succeeds
 	server1 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, useragent.GetUserAgentString(), r.Header.Get("User-Agent"))
 		w.WriteHeader(http.StatusForbidden)
 	}))
 	defer server1.Close()
 
 	server2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, useragent.GetUserAgentString(), r.Header.Get("User-Agent"))
 		w.WriteHeader(http.StatusOK)
 		dat, err := ioutil.ReadFile(wysFile)
 		assert.Nil(t, err)
@@ -72,11 +76,13 @@ func TestNet_DownloadFile_Success(t *testing.T) {
 
 func TestNet_DownloadFile_AllError(t *testing.T) {
 	server1 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, useragent.GetUserAgentString(), r.Header.Get("User-Agent"))
 		w.WriteHeader(http.StatusForbidden)
 	}))
 	defer server1.Close()
 
 	server2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, useragent.GetUserAgentString(), r.Header.Get("User-Agent"))
 		w.WriteHeader(http.StatusForbidden)
 	}))
 	defer server2.Close()
@@ -90,12 +96,14 @@ func TestNet_DownloadFile_AllError(t *testing.T) {
 
 func TestNet_DownloadFile_webpage(t *testing.T) {
 	server1 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, useragent.GetUserAgentString(), r.Header.Get("User-Agent"))
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("<html>This is HTML</html>"))
 	}))
 	defer server1.Close()
 
 	server2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, useragent.GetUserAgentString(), r.Header.Get("User-Agent"))
 		w.WriteHeader(http.StatusNotFound)
 	}))
 	defer server2.Close()
