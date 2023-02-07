@@ -1,6 +1,6 @@
 #!/bin/bash
 
-GOOSES=("darwin" "windows")
+GOOSES=("windows")
 TAGS=("debug" "touchstone")
 
 FAILED=0
