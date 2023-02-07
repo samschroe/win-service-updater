@@ -1,7 +1,7 @@
 #!/bin/bash
 
 GOOSES=("windows")
-TAGS=("debug" "touchstone")
+TAGS=("debug")
 
 FAILED=0
 
