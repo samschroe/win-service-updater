@@ -1,0 +1,73 @@
+---
+version: 2.1
+
+orbs:
+  win: circleci/windows@2.2.0
+  go: circleci/go@1
+
+parameters:
+  hupdatebranch:
+    type: string
+    default: "main"
+
+commands:
+  install_go_windows:
+    description: Install Go version 1.19 on Windows
+    steps:
+      - run:
+          name: Install GO
+          command: |
+            go install golang.org/dl/go1.19@latest
+            $ENV:PATH="$ENV:PATH;$HOME\go\bin"
+            go1.19 download
+            Move-Item -force "$HOME\go\bin\go1.19.exe" "C:\Program Files\Go\bin\go.exe"
+
+jobs:
+  preflight:
+    docker:
+      - image: cimg/go:1.19
+    steps:
+      - checkout
+      - run:
+          name: Format check
+          command: ./scripts/check-fmt.sh
+      - run:
+          name: Vet check
+          command: ./scripts/check-vet.sh
+
+  test_windows:
+    executor:
+      name: win/default
+    steps:
+      - checkout
+      - install_go_windows
+      - go/mod-download-cached
+      - run:
+          name: Fetch gotestsum
+          command: go get gotest.tools/gotestsum
+      - run:
+          name: Go Test
+          command: |
+            mkdir /tmp/test-results
+            go run gotest.tools/gotestsum --format testname --junitfile /tmp/test-results/unit-tests.xml -- -timeout 20m -tags "full" .\...
+      - store_test_results:
+          path: /tmp/test-results
+
+workflows:
+  agent:
+    jobs:
+      - preflight
+      - test_windows:
+          requires:
+            - preflight
+
+  agent-weekly:
+    triggers:
+      - schedule:
+          cron: "0 5 * * 1"
+          filters:
+            branches:
+              only:
+                main
+    jobs:
+      - test_windows
