@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/huntresslabs/win-service-updater/updater/useragent"
 )
 
 const (
@@ -68,7 +69,16 @@ func HTTPGetFile(URL string, file *os.File) error {
 		Transport: httpTransport,
 	}
 
-	resp, err := httpClient.Get(URL)
+	req, err := http.NewRequest(http.MethodGet, URL, nil)
+	if nil != err {
+		return err
+	}
+
+	req.Header.Set("User-Agent", useragent.GetUserAgentString())
+
+	resp, err := httpClient.Do(req)
+
+	//resp, err := httpClient.Get(URL)
 	if nil != err {
 		return err
 	}
