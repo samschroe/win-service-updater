@@ -12,20 +12,20 @@ parameters:
 
 commands:
   install_go_windows:
-    description: Install Go version 1.19 on Windows
+    description: Install Go version 1.20.1 on Windows
     steps:
       - run:
           name: Install GO
           command: |
-            go install golang.org/dl/go1.19@latest
+            go install golang.org/dl/go1.20.1@latest
             $ENV:PATH="$ENV:PATH;$HOME\go\bin"
-            go1.19 download
-            Move-Item -force "$HOME\go\bin\go1.19.exe" "C:\Program Files\Go\bin\go.exe"
+            go1.20.1 download
+            Move-Item -force "$HOME\go\bin\go1.20.1.exe" "C:\Program Files\Go\bin\go.exe"
 
 jobs:
   preflight:
     docker:
-      - image: cimg/go:1.19
+      - image: cimg/go:1.20.1
     steps:
       - checkout
       - run:
