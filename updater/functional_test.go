@@ -57,7 +57,7 @@ func TestFunctional_CompareVersions(t *testing.T) {
 	args, err := ParseArgs(argv)
 	assert.Nil(t, err)
 
-	wys, err := info.ParseWYS(wysFile, args)
+	wys, err := info.ParseWYSFromFilePath(wysFile, args)
 	assert.Nil(t, err)
 
 	rc := CompareVersions("0.1.2.3", wys.VersionToUpdate)
@@ -92,10 +92,10 @@ func TestFunctional_SameVersion(t *testing.T) {
 	uri := fixupTestURL(string(iuc.IucServerFileSite[0].Value), tsWYS.URL)
 
 	fp := fmt.Sprintf("%s/wys", tmpDir)
-	err = DownloadFile([]string{uri}, fp)
+	err = DownloadFileToDisk([]string{uri}, fp)
 	assert.Nil(t, err)
 
-	wys, err := info.ParseWYS(fp, args)
+	wys, err := info.ParseWYSFromFilePath(fp, args)
 	assert.Nil(t, err)
 
 	// fmt.Println("installed ", string(iuc.IucInstalledVersion.Value))
@@ -148,10 +148,10 @@ func TestFunctional_URLArgs(t *testing.T) {
 	turi := fixupTestURL(urls[0], tsWYS.URL)
 
 	fp := fmt.Sprintf("%s/wys", tmpDir)
-	err = DownloadFile([]string{turi}, fp)
+	err = DownloadFileToDisk([]string{turi}, fp)
 	assert.Nil(t, err)
 
-	wys, err := info.ParseWYS(fp, args)
+	wys, err := info.ParseWYSFromFilePath(fp, args)
 	assert.Nil(t, err)
 
 	// fmt.Println("installed ", string(iuc.IucInstalledVersion.Value))
@@ -164,7 +164,7 @@ func TestFunctional_URLArgs(t *testing.T) {
 
 	// download wyu
 	fp = fmt.Sprintf("%s/wyu", tmpDir)
-	err = DownloadFile([]string{turi}, fp)
+	err = DownloadFileToDisk([]string{turi}, fp)
 	assert.Nil(t, err)
 }
 
@@ -212,10 +212,10 @@ func TestFunctional_UpdateWithRollback(t *testing.T) {
 	turi := fixupTestURL(urls[0], tsWYS.URL)
 
 	fp := filepath.Join(tmpDir, "wys")
-	err = DownloadFile([]string{turi}, fp)
+	err = DownloadFileToDisk([]string{turi}, fp)
 	assert.Nil(t, err)
 
-	wys, err := info.ParseWYS(fp, args)
+	wys, err := info.ParseWYSFromFilePath(fp, args)
 	assert.Nil(t, err)
 
 	// fmt.Println("installed ", string(iuc.IucInstalledVersion.Value))
@@ -228,7 +228,7 @@ func TestFunctional_UpdateWithRollback(t *testing.T) {
 
 	// download wyu
 	fp = filepath.Join(tmpDir, "wyu")
-	err = DownloadFile([]string{turi}, fp)
+	err = DownloadFileToDisk([]string{turi}, fp)
 	assert.Nil(t, err)
 
 	key, err := ParsePublicKey(string(iuc.IucPublicKey.Value))
@@ -236,7 +236,7 @@ func TestFunctional_UpdateWithRollback(t *testing.T) {
 	rsa.N = key.Modulus
 	rsa.E = key.Exponent
 
-	sha1hash, err := SHA1Hash(fp)
+	sha1hash, err := GenerateSHA1HashFromFilePath(fp)
 	assert.Nil(t, err)
 
 	// validated

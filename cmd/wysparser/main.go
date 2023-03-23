@@ -11,7 +11,7 @@ import (
 func main() {
 	args := updater.Args{}
 	info := updater.Info{}
-	wys, err := info.ParseWYS(os.Args[1], args)
+	wys, err := info.ParseWYSFromFilePath(os.Args[1], args)
 	if nil != err {
 		log.Fatal(err)
 	}

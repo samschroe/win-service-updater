@@ -1,12 +1,15 @@
 package updater
 
 import (
-	"github.com/huntresslabs/win-service-updater/updater/useragent"
+	"errors"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/huntresslabs/win-service-updater/updater/useragent"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/stretchr/testify/assert"
@@ -25,7 +28,20 @@ func TestNet_HTTPGetFile_Timeout(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestNet_HTTPGetFile_Nil_File(t *testing.T) {
+// ErrWriter returns an io.Writer that returns 0, err from all Write calls.
+func ErrWriter(err error) io.Writer {
+	return &errWriter{err: err}
+}
+
+type errWriter struct {
+	err error
+}
+
+func (w *errWriter) Write(p []byte) (int, error) {
+	return 0, w.err
+}
+
+func TestNet_HTTPGetFile_BadWriter(t *testing.T) {
 	wysFile := "./testdata/widgetX.1.0.1.wys"
 
 	// hold connection open to longer than TimeoutClient
@@ -38,7 +54,7 @@ func TestNet_HTTPGetFile_Nil_File(t *testing.T) {
 	}))
 	defer server1.Close()
 
-	err := HTTPGetFile(server1.URL, nil)
+	err := HTTPGetFile(server1.URL, ErrWriter(errors.New("I can't write!")))
 	t.Log(err)
 	assert.NotNil(t, err)
 }
@@ -63,7 +79,7 @@ func TestNet_DownloadFile_Success(t *testing.T) {
 	defer server2.Close()
 
 	f := SetupTmpLog()
-	err := DownloadFile([]string{server1.URL, server2.URL}, f.Name())
+	err := DownloadFileToDisk([]string{server1.URL, server2.URL}, f.Name())
 	assert.Nil(t, err)
 
 	origHash, err := GetSHA256(wysFile)
@@ -88,7 +104,7 @@ func TestNet_DownloadFile_AllError(t *testing.T) {
 	defer server2.Close()
 
 	f := SetupTmpLog()
-	err := DownloadFile([]string{server1.URL, server2.URL, "http://foo.bar"}, f.Name())
+	err := DownloadFileToDisk([]string{server1.URL, server2.URL, "http://foo.bar"}, f.Name())
 	assert.NotNil(t, err)
 	_, ok := err.(*multierror.Error)
 	assert.True(t, ok)
@@ -109,7 +125,7 @@ func TestNet_DownloadFile_webpage(t *testing.T) {
 	defer server2.Close()
 
 	f := SetupTmpLog()
-	err := DownloadFile([]string{server1.URL, server2.URL}, f.Name())
+	err := DownloadFileToDisk([]string{server1.URL, server2.URL}, f.Name())
 	assert.NotNil(t, err)
 	_, ok := err.(*multierror.Error)
 	assert.True(t, ok)
@@ -118,11 +134,11 @@ func TestNet_DownloadFile_webpage(t *testing.T) {
 
 func TestNet_DownloadFile_NoURLs(t *testing.T) {
 	f := SetupTmpLog()
-	err := DownloadFile([]string{}, f.Name())
+	err := DownloadFileToDisk([]string{}, f.Name())
 	assert.NotNil(t, err)
 }
 
 func TestNet_DownloadFile_InvalidLocalFile(t *testing.T) {
-	err := DownloadFile([]string{"http://foo.bar"}, "/Users/foo")
+	err := DownloadFileToDisk([]string{"http://foo.bar"}, "/Users/foo")
 	assert.NotNil(t, err)
 }

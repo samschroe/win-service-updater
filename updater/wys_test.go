@@ -15,7 +15,7 @@ import (
 func TestWYS_ParseWYS(t *testing.T) {
 	info := Info{}
 	var args Args
-	wys, err := info.ParseWYS("./testdata/widgetX.1.0.1.wys", args)
+	wys, err := info.ParseWYSFromFilePath("./testdata/widgetX.1.0.1.wys", args)
 	assert.Nil(t, err)
 	assert.Contains(t, wys.UpdateFileSite[0], "127.0.0.1")
 }
@@ -30,7 +30,7 @@ func TestWYS_getWyuFile(t *testing.T) {
 	info := Info{}
 	var args Args
 	// the fake wys file
-	wys, err := info.ParseWYS("./testdata/widgetX.1.0.1.wys", args)
+	wys, err := info.ParseWYSFromFilePath("./testdata/widgetX.1.0.1.wys", args)
 	assert.NoError(t, err)
 
 	// the fake wyuFile

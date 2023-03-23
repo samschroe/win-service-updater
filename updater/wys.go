@@ -124,14 +124,32 @@ func ReadWYSTLV(r io.Reader) *TLV {
 	return &record
 }
 
-// ParseWYS parses a compress WYS file
-func (wysInfo Info) ParseWYS(compressedWYSFile string, args Args) (wys ConfigWYS, err error) {
-	zipr, err := zip.OpenReader(compressedWYSFile)
+// ParseWYSFromReader returns the parsed contents, wys, as read from the reader, which are assumed to be a compresseed WYS file,
+// annotated with the content size.  wys will always be zero value when err is not nil.
+func (wysInfo Info) ParseWYSFromReader(reader io.ReaderAt, size int64) (wys ConfigWYS, err error) {
+	zipr, err := zip.NewReader(reader, size)
+	if err != nil {
+		return wys, err
+	}
+
+	return wysInfo.parseWYSFromZipReader(zipr)
+}
+
+// ParseWYSFromReader returns the parsed contents, wys, as read from the compressedWYSFilePath.
+// wys will always be zero value when err is not nil.
+func (wysInfo Info) ParseWYSFromFilePath(compressedWYSFilePath string, _ Args) (wys ConfigWYS, err error) {
+	zipr, err := zip.OpenReader(compressedWYSFilePath)
 	if err != nil {
 		return wys, err
 	}
 	defer zipr.Close()
 
+	return wysInfo.parseWYSFromZipReader(&zipr.Reader)
+}
+
+// parseWYSFromZipReader returns the parsed contents, wys, as read from zipr.
+// wys will always be zero value when err is not nil.
+func (wysInfo Info) parseWYSFromZipReader(zipr *zip.Reader) (wys ConfigWYS, err error) {
 	for _, f := range zipr.File {
 		// there is only one file in the archive
 		// "0" is the name of the uncompressed wys file
@@ -201,16 +219,19 @@ func (wysInfo Info) ParseWYS(compressedWYSFile string, args Args) (wys ConfigWYS
 	return wys, err
 }
 
-// GetWYUURLs returns the UpdateFileSite(s) included in the WYS file.
+// GetWYUURLs returns the UpdateFileSite(s) included in the WYS file associated with config and populates
+// urls with the site URLs.
+// args are used to inject any CLI provided URL arguments and allow for overriding of the site URL.
 func (wys ConfigWYS) GetWYUURLs(args Args) (urls []string) {
+	urlsToConsider := wys.UpdateFileSite
 	// This can only be specified in tests
 	if len(args.WYUTestServer) > 0 {
-		urls = append(urls, args.WYUTestServer)
-		return urls
+		urlsToConsider = []string{args.WYUTestServer}
 	}
 
-	// replace %urlargs% with the args specified on the command line
-	for _, s := range wys.UpdateFileSite {
+	// we want to allow injection of URL args on an overidden URL as well
+	// as the one(s) in the WYC file
+	for _, s := range urlsToConsider {
 		u := strings.Replace(s, "%urlargs%", args.Urlargs, 1)
 		urls = append(urls, u)
 	}
@@ -282,7 +303,7 @@ func (wys ConfigWYS) getWyuFile(args Args, fp string) error {
 	// the wyu file and copy it to the lastWyuDownload (cached
 	// location)
 	urls := wys.GetWYUURLs(args)
-	err = DownloadFile(urls, fp)
+	err = DownloadFileToDisk(urls, fp)
 
 	// check to make sure the downloaded file matches the adler32
 	// checksum

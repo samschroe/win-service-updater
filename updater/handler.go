@@ -3,15 +3,16 @@ package updater
 import (
 	"crypto/rsa"
 	"fmt"
-	"io/ioutil"
+	"io"
+	"log"
 	"os"
-	"path"
-	"strings"
+	"path/filepath"
 )
 
 // Infoer interface used to make testing easier
 type Infoer interface {
-	ParseWYS(string, Args) (ConfigWYS, error)
+	ParseWYSFromReader(reader io.ReaderAt, size int64) (wys ConfigWYS, err error)
+	ParseWYSFromFilePath(compressedWYSFilePath string, _ Args) (wys ConfigWYS, err error)
 	ParseWYC(string) (ConfigIUC, error)
 }
 
@@ -21,35 +22,27 @@ type Info struct{}
 // Handler is the "main" called by cmd/main.go
 func Handler() int {
 	args, err := ParseArgs(os.Args)
-	if nil != err {
+	if err != nil {
 		if args.Debug {
-			fmt.Println(err.Error())
+			log.Println(err.Error())
 		}
 		LogErrorMsg(args, err.Error())
 		LogOutputInfoMsg(args, err.Error())
 		return EXIT_ERROR
 	}
 
-	info := Info{}
-
-	// cleanup any old tmp directories on every run
-	items, _ := ioutil.ReadDir(GetExeDir())
-	for _, item := range items {
-		if item.IsDir() && strings.HasPrefix(item.Name(), TempDirPrefix()) {
-			DeleteDirectory(item.Name())
-		}
-	}
-
 	// check for updates
+	info := Info{}
 	if args.Quickcheck && args.Justcheck {
+		// Quickcheck
 		if args.Debug {
-			fmt.Println("Checking for updates...")
+			log.Println("Quick Check and Just Check checking for Updates...")
 		}
 
 		rc, err := CheckForUpdateHandler(info, args)
 		if nil != err {
 			if args.Debug {
-				fmt.Println(err.Error())
+				log.Println(err.Error())
 			}
 			LogErrorMsg(args, err.Error())
 			LogOutputInfoMsg(args, err.Error())
@@ -58,32 +51,33 @@ func Handler() int {
 		if args.Debug {
 			switch rc {
 			case EXIT_NO_UPDATE:
-				fmt.Println("No update available")
+				log.Println("No update available")
 			case EXIT_UPDATE_AVALIABLE:
-				fmt.Println("Update available")
+				log.Println("Update available")
 			}
 		}
 
+		// End Quickcheck
 		return rc
 	}
 
 	// update
 	if args.Fromservice {
 		if args.Debug {
-			fmt.Println("Updating...")
+			log.Println("Updating...")
 		}
 
 		rc, err := UpdateHandler(info, (args))
 		if err != nil {
 			if args.Debug {
-				fmt.Println(err.Error())
+				log.Println(err.Error())
 			}
 			LogErrorMsg(args, err.Error())
 			LogOutputInfoMsg(args, err.Error())
 		}
 
 		if args.Debug && rc == 0 {
-			fmt.Println("Update successful")
+			log.Println("Update successful")
 		}
 		return rc
 	}
@@ -93,48 +87,34 @@ func Handler() int {
 
 // UpdateHandler performs the update. Returns int exit code and error.
 func UpdateHandler(infoer Infoer, args Args) (int, error) {
-	instDir := GetExeDir()
+	candidateUpdateReq, err := NewCandidateUpdateRequest(args, infoer)
+	if err != nil {
+		return EXIT_ERROR, err
+	}
 
 	tmpDir, err := CreateTempDir()
 	if nil != err {
-		err = fmt.Errorf("no temp dir; %v", err)
+		err = fmt.Errorf("failed to create temp dir; %w", err)
 		return EXIT_ERROR, err
 	}
 	defer DeleteDirectory(tmpDir)
 
-	// parse the WYC file for get update site, installed version, etc.
-	iuc, err := infoer.ParseWYC(args.Cdata)
-	if nil != err {
-		err = fmt.Errorf("error reading %s; %v", args.Cdata, err)
+	// write the contents of the wys file to disk (contains details about the available update)
+	wysFilePath := filepath.Join(tmpDir, "wys")
+	err = os.WriteFile(wysFilePath, candidateUpdateReq.CandidateWysFileContent.Bytes(), 0644)
+	if err != nil {
+		err = fmt.Errorf("failed to write WYS file to: %v; %w", wysFilePath, err)
 		return EXIT_ERROR, err
 	}
-
-	// download the wys file (contains details about the availiable update)
-	fp := fmt.Sprintf("%s/wys", tmpDir)
-	urls := iuc.GetWYSURLs(args)
-	err = DownloadFile(urls, fp)
-	if nil != err {
-		return EXIT_ERROR, err
-	}
-
-	// parse the WYS file (contains the version number of the update and the link to the update)
-	wys, err := infoer.ParseWYS(fp, args)
-	if nil != err {
-		err = fmt.Errorf("error reading wys file (%s); %v", fp, err)
-		return EXIT_ERROR, err
-	}
-
-	// fmt.Println("installed ", string(iuc.IucInstalledVersion.Value))
-	// fmt.Println("new ", wys.VersionToUpdate)
 
 	// download WYU (this is the archive with the updated files)
-
-	fp = fmt.Sprintf("%s/wyu", tmpDir)
-
-	if err := wys.getWyuFile(args, fp); err != nil {
+	wys := candidateUpdateReq.ConfigWYS
+	wyuFilePath := filepath.Join(tmpDir, "wyu")
+	if err := wys.getWyuFile(args, wyuFilePath); err != nil {
 		return EXIT_ERROR, err
 	}
 
+	iuc := candidateUpdateReq.ConfigIUC
 	if iuc.IucPublicKey.Value != nil {
 		if len(wys.FileSha1) == 0 {
 			err = fmt.Errorf("The update is not signed. All updates must be signed in order to be installed.")
@@ -148,24 +128,24 @@ func UpdateHandler(infoer Infoer, args Args) (int, error) {
 		rsa.E = key.Exponent
 
 		// hash the downloaded WYU file
-		sha1hash, err := SHA1Hash(fp)
+		sha1hash, err := GenerateSHA1HashFromFilePath(wyuFilePath)
 		if nil != err {
-			err = fmt.Errorf("The downloaded file \"%s\" failed the signature validation: %v", fp, err)
+			err = fmt.Errorf("The downloaded file \"%s\" failed the signature validation: %w", wyuFilePath, err)
 			return EXIT_ERROR, err
 		}
 
 		// verify the signature of the WYU file (the signed hash is included in the WYS file)
 		err = VerifyHash(&rsa, sha1hash, wys.FileSha1)
 		if nil != err {
-			err = fmt.Errorf("The downloaded file \"%s\" is not signed. %v", fp, err)
+			err = fmt.Errorf("The downloaded file \"%s\" is not signed. %w", wyuFilePath, err)
 			return EXIT_ERROR, err
 		}
 	}
 
 	// extract the WYU to tmpDir
-	_, files, err := Unzip(fp, tmpDir)
+	_, files, err := Unzip(wyuFilePath, tmpDir)
 	if nil != err {
-		err = fmt.Errorf("error unzipping %s; %v", fp, err)
+		err = fmt.Errorf("error unzipping %s; %w", wyuFilePath, err)
 		return EXIT_ERROR, err
 	}
 
@@ -178,6 +158,7 @@ func UpdateHandler(infoer Infoer, args Args) (int, error) {
 	}
 
 	// backup the existing files that will be overwritten by the update
+	instDir := GetExeDir()
 	backupDir, err := BackupFiles(updates, instDir)
 	defer DeleteDirectory(backupDir)
 	if nil != err {
@@ -189,9 +170,15 @@ func UpdateHandler(infoer Infoer, args Args) (int, error) {
 	// TODO is there a way to clean this up
 	err = InstallUpdate(udt, updates, instDir)
 	if nil != err {
-		err = fmt.Errorf("error applying update; %v", err)
+		err = fmt.Errorf("error applying update; %w", err)
 		// TODO rollback should restore client.wyc
 		RollbackFiles(backupDir, instDir)
+
+		err = os.Rename(wysFilePath, filepath.Join(instDir, INSTALL_FAILED_SENTINAL_WYS_FILE_NAME))
+		if err != nil {
+			err = fmt.Errorf("error renaming %s to failed install sentinel; %w", wysFilePath, err)
+		}
+
 		// start services, best effort
 		for _, s := range udt.ServiceToStartAfterUpdate {
 			svc := ValueToString(&s)
@@ -201,41 +188,21 @@ func UpdateHandler(infoer Infoer, args Args) (int, error) {
 	}
 
 	// we haven't erred, write latest version number and exit
+	// Newest version is recorded and we wipe out all temp files
 	UpdateWYCWithNewVersionNumber(iuc, args.Cdata, wys.VersionToUpdate)
 	return EXIT_SUCCESS, nil
 }
 
 // CheckForUpdateHandler checks to see if an update is availible. Returns int
 // exit code and error.
-func CheckForUpdateHandler(infoer Infoer, args Args) (int, error) {
-	// read WYC
-	iuc, err := infoer.ParseWYC(args.Cdata)
-	if nil != err {
-		err = fmt.Errorf("error reading %s; %v", args.Cdata, err)
+func CheckForUpdateHandler(infoer Info, args Args) (int, error) {
+	candidateUpdateReq, err := NewCandidateUpdateRequest(args, infoer)
+	if err != nil {
 		return EXIT_ERROR, err
 	}
 
-	tmpDir, err := CreateTempDir()
-	if nil != err {
-		err = fmt.Errorf("no temp dir; %v", err)
-		return EXIT_ERROR, err
-	}
-	defer os.RemoveAll(tmpDir)
-
-	wysTmpFile := path.Join(tmpDir, "wysTemp")
-	urls := iuc.GetWYSURLs(args)
-
-	err = DownloadFile(urls, wysTmpFile)
-	if nil != err {
-		return EXIT_ERROR, err
-	}
-
-	wys, err := infoer.ParseWYS(wysTmpFile, args)
-	if nil != err {
-		err = fmt.Errorf("error reading %s; %v", wysTmpFile, err)
-		return EXIT_ERROR, err
-	}
-
+	iuc := candidateUpdateReq.ConfigIUC
+	wys := candidateUpdateReq.ConfigWYS
 	// compare versions
 	rc := CompareVersions(string(iuc.IucInstalledVersion.Value), wys.VersionToUpdate)
 	switch rc {

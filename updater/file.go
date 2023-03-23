@@ -17,25 +17,32 @@ func GetExeDir() string {
 	return filepath.Dir(exe)
 }
 
-// SHA1Hash returns the SHA1 hash as []byte
-func SHA1Hash(filePath string) ([]byte, error) {
+// GenerateSHA1HashFromFilePath returns the SHA1 hash of the contents for the filePath.
+// hash will always be zero value when err is not nil.
+func GenerateSHA1HashFromFilePath(filePath string) (hash []byte, err error) {
 	file, err := os.Open(filePath)
 	if nil != err {
 		return []byte{}, err
 	}
 	defer file.Close()
 
-	// Open a new hash interface to write to
-	hash := sha1.New()
+	return GenerateSHA1HashFromReader(file)
+}
 
-	// Copy the file into the hash interface
-	_, err = io.Copy(hash, file)
+// GenerateSHA1HashFromReader returns the SHA1 hash of the contents read from the reader.
+// hash will always be zero value when err is not nil.
+func GenerateSHA1HashFromReader(reader io.Reader) (hash []byte, err error) {
+	// Open a new hash interface to write to
+	sha1Hash := sha1.New()
+
+	// Copy the reader into the hash interface
+	_, err = io.Copy(sha1Hash, reader)
 	if nil != err {
 		return []byte{}, err
 	}
 
 	// return []byte representation of hash
-	return hash.Sum(nil), nil
+	return sha1Hash.Sum(nil), nil
 }
 
 func TempDirPrefix() string {

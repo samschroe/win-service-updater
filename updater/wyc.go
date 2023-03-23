@@ -99,16 +99,24 @@ type wycConfig struct {
 	PublicKey      string
 }
 
-// GetWYSURLs returns the ServerFileSite(s) listed in the WYC file.
+// GetWYSURLs returns the ServerFileSite(s) listed in the WYC file associated with config and populates
+// urls with the site URLs.
+// args are used to inject any CLI provided URL arguments and allow for overriding of the site URL.
 func (config ConfigIUC) GetWYSURLs(args Args) (urls []string) {
 	// WYS URL specified on the command line
-	if len(args.Server) > 0 {
-		urls = append(urls, args.Server)
-		return urls
+	urlsToConsider := make([]string, len(config.IucServerFileSite))
+	for idx, fileSite := range config.IucServerFileSite {
+		urlsToConsider[idx] = string(fileSite.Value)
 	}
 
-	for _, s := range config.IucServerFileSite {
-		u := strings.Replace(string(s.Value), "%urlargs%", args.Urlargs, 1)
+	if len(args.WYSTestServer) > 0 {
+		urlsToConsider = []string{args.WYSTestServer}
+	}
+
+	// we want to allow injection of URL args on an overidden URL as well
+	// as the one(s) in the WYC file
+	for _, s := range urlsToConsider {
+		u := strings.Replace(s, "%urlargs%", args.Urlargs, 1)
 		urls = append(urls, u)
 	}
 	return urls
@@ -318,6 +326,7 @@ func writeIuc(config ConfigIUC, path string) error {
 func UpdateWYCWithNewVersionNumber(config ConfigIUC, origWYCFile string, version string) (newWYCFile string, err error) {
 	// Unzip the archive. We'll create a new iuclient.iuc, but we need the
 	// other files.
+
 	tmpDir, err := CreateTempDir()
 	if nil != err {
 		err = fmt.Errorf("no temp dir; %v", err)

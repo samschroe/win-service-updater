@@ -1,6 +1,7 @@
 package updater
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -22,13 +23,7 @@ const (
 
 func fileExists(filename string) bool {
 	_, err := os.Stat(filename)
-	if !os.IsNotExist(err) {
-		//file exists
-		return true
-	}
-
-	// no such file or directory
-	return false
+	return !os.IsNotExist(err)
 }
 
 // CompareVersions compares two versions and returns an integer that indicates
@@ -185,6 +180,8 @@ func InstallUpdate(udt ConfigUDT, srcFiles []string, installDir string) error {
 	return nil
 }
 
+// TODO: Move all these generic "file" functions to file.go
+
 // MoveFile moves a `file` to `dst`
 func MoveFile(file string, dst string) error {
 	// Rename() returns *LinkError if it errs
@@ -228,4 +225,75 @@ func CopyFile(src, dst string) (int64, error) {
 
 	nBytes, err := io.Copy(destination, source)
 	return nBytes, err
+}
+
+// candidateWysFileMatchesFailedInstallWysFile considers whether the WYS file read from the candidateWysFileReader, which
+// corresponds to an update that is a candidate for further processing, matches the locally saved copy of the last WYS file
+// we tried to process and install.  It will return false if we should further process the candidate WYS file, and true otherwise.
+func candidateWysFileMatchesFailedInstallWysFile(candidateWysFileReader io.Reader) bool {
+	// we expect this failed sentinel file to exist iff a prior update/installation failed
+	// it should be a copy of the WYS file that triggered this aforementioned update
+	installFailedSentinelFilePath := filepath.Join(GetExeDir(), INSTALL_FAILED_SENTINAL_WYS_FILE_NAME)
+	if !fileExists(installFailedSentinelFilePath) {
+		return false
+	}
+
+	sentinelWysFileHash, err := GenerateSHA1HashFromFilePath(installFailedSentinelFilePath)
+	if err != nil {
+		return false
+	}
+
+	candidateWysFileHash, err := GenerateSHA1HashFromReader(candidateWysFileReader)
+	if err != nil {
+		return false
+	}
+
+	return bytes.Equal(sentinelWysFileHash, candidateWysFileHash)
+}
+
+// CandidateUpdateRequest represents all the data necessary to define and generate a request for an [agent] update
+type CandidateUpdateRequest struct {
+	ConfigIUC               ConfigIUC
+	CandidateWysFileContent bytes.Buffer
+	ConfigWYS               ConfigWYS
+}
+
+// NewCandidateUpdateRequest returns a populated req if all the prerequisites to generate one are present.
+// req will always be zero value when err is not nil.
+func NewCandidateUpdateRequest(args Args, wyFileParser Infoer) (req CandidateUpdateRequest, err error) {
+	// parse the WYC file to get the update site, installed version, etc.
+	wycFilePath := args.Cdata
+	iuc, err := wyFileParser.ParseWYC(wycFilePath)
+	if nil != err {
+		err = fmt.Errorf("error reading WYC file: %s; %w", wycFilePath, err)
+		return req, err
+	}
+
+	urls := iuc.GetWYSURLs(args)
+
+	var candidateWysFileContents bytes.Buffer
+	if err := DownloadFileToWriter(urls, &candidateWysFileContents); err != nil {
+		return req, err
+	}
+
+	candidateWysFileReader := bytes.NewReader(candidateWysFileContents.Bytes())
+	wys, err := wyFileParser.ParseWYSFromReader(candidateWysFileReader, int64(candidateWysFileContents.Len()))
+	if nil != err {
+		err = fmt.Errorf("error parsing downloaded candidate WYS file; %w", err)
+		return req, err
+	}
+
+	// At this point, we have the wys file from the server in memory.
+	// It is a new file and from a trusted source, so we'll determine if this candidate
+	// is valid and requires further processing of the update. If so, we'll return a populated context.
+	if candidateWysFileMatchesFailedInstallWysFile(candidateWysFileReader) {
+		err = fmt.Errorf("error updating to version '%v' failed before, aborting updating", wys.VersionToUpdate)
+		return req, err
+	}
+
+	return CandidateUpdateRequest{
+		ConfigIUC:               iuc,
+		ConfigWYS:               wys,
+		CandidateWysFileContent: candidateWysFileContents,
+	}, nil
 }

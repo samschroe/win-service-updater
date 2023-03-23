@@ -2,10 +2,10 @@ package updater
 
 // Default file names
 const (
-	CLIENT_WYC      = "client.wyc"
-	IUCLIENT_IUC    = "iuclient.iuc"    // inside client.wyc
-	UPDTDETAILS_UDT = "updtdetails.udt" // inside .wyu archive
-
+	CLIENT_WYC                            = "client.wyc"
+	IUCLIENT_IUC                          = "iuclient.iuc"    // inside client.wyc
+	UPDTDETAILS_UDT                       = "updtdetails.udt" // inside .wyu archive
+	INSTALL_FAILED_SENTINAL_WYS_FILE_NAME = "failed_install.wys"
 )
 
 // File headers

@@ -46,7 +46,8 @@ Basic update functionality works.
 - "/fromservice" (normal operation, but added so the argument parser doesn't error)
 - "-logfile=_log_"
 - "-cdata=_file_"
-- "-server=_url_"
+- "-wysserver=_url_"
+- "-wyuserver=_url_"
 
 ## Commands
 

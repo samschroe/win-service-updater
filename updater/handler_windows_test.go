@@ -37,7 +37,7 @@ func TestHandler_UpdateHandler(t *testing.T) {
 
 	var args Args
 	args.Cdata = wycFile
-	args.Server = tsWYS.URL
+	args.WYSTestServer = tsWYS.URL
 	args.WYUTestServer = tsWYU.URL
 	args.Outputinfo = true
 	f := SetupTmpLog()

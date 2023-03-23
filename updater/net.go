@@ -19,44 +19,49 @@ const (
 	TimeoutClient       = 60
 )
 
-// DownloadFile will download a file, saving it to a local file. It
-// will try all URLs until one succeeds or all fail (error).
-func DownloadFile(urls []string, localpath string) error {
-	if len(urls) == 0 {
-		err := fmt.Errorf("No download urls are specified.")
-		return err
+// DownloadFileToDisk will download the content linked by one of the provided urls and save it locally to localpath. It
+// will try all URLs in order until one succeeds. If all fail it will return an error.
+func DownloadFileToDisk(urls []string, localpath string) error {
+	if len(localpath) == 0 {
+		return fmt.Errorf("Error trying to save file: no file path provide")
 	}
 
 	// Create the local output file
 	out, err := os.Create(localpath)
 	if nil != err {
-		if len(localpath) == 0 {
-			err = fmt.Errorf("Error trying to save file: %v", err)
-		} else {
-			err = fmt.Errorf("Error trying to save file \"%s\": %v", localpath, err)
-		}
-		return err
+		return fmt.Errorf("Error trying to save file \"%s\": %w", localpath, err)
 	}
 	defer out.Close()
+
+	return DownloadFileToWriter(urls, out)
+}
+
+// DownloadFileToWriter will download the content linked by one of the provided urls and write it to the provided writer. It
+// will try all URLs in order until one succeeds. If all fail it will return an error.
+func DownloadFileToWriter(urls []string, writer io.Writer) error {
+	if len(urls) == 0 {
+		err := fmt.Errorf("No download urls are specified.")
+		return err
+	}
 
 	// attempt each URL in the slice until download succeeds
 	var result error
 	for _, url := range urls {
 		//  GET file, if we fail try next URL, otherwise return success (nil)
-		err = HTTPGetFile(url, out)
-		if nil != err {
-			result = multierror.Append(result, err)
-			continue
-		} else {
+		err := HTTPGetFile(url, writer)
+		if nil == err {
 			return nil
 		}
+
+		result = multierror.Append(result, err)
 	}
 
 	return result
 }
 
-// HTTPGetFile GETs a file and saves it locally
-func HTTPGetFile(URL string, file *os.File) error {
+// HTTPGetFile GETs the contented linked by the URL and writes it to the writer and
+// returns an error if the content is HTML or the HTTP request doesn't respond with 200 (OK).
+func HTTPGetFile(URL string, writer io.Writer) error {
 	httpTransport := &http.Transport{
 		Dial: (&net.Dialer{
 			Timeout: time.Second * TimeoutDial,
@@ -77,8 +82,6 @@ func HTTPGetFile(URL string, file *os.File) error {
 	req.Header.Set("User-Agent", useragent.GetUserAgentString())
 
 	resp, err := httpClient.Do(req)
-
-	//resp, err := httpClient.Get(URL)
 	if nil != err {
 		return err
 	}
@@ -95,7 +98,7 @@ func HTTPGetFile(URL string, file *os.File) error {
 	}
 
 	// Write the body to file
-	_, err = io.Copy(file, resp.Body)
+	_, err = io.Copy(writer, resp.Body)
 	if nil != err {
 		return err
 	}

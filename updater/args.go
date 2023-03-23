@@ -28,7 +28,7 @@ type Args struct {
 	OutputinfoLog string
 	Logfile       string
 	Cdata         string
-	Server        string
+	WYSTestServer string // Used for testing
 	WYUTestServer string // Used for testing
 }
 
@@ -60,7 +60,9 @@ func ParseArgs(argsSlice []string) (args Args, err error) {
 	fs.StringVar(&args.OutputinfoLog, "outputinfo", "", "Output info")
 	// default to client.wyc
 	fs.StringVar(&args.Cdata, "cdata", filepath.Join(GetExeDir(), CLIENT_WYC), "Config data")
-	fs.StringVar(&args.Server, "server", "", "Server")
+	// TODO: These overrides should only be available in a debug build, not in what gets shipped in production
+	fs.StringVar(&args.WYSTestServer, "wysserver", "", "WYS Server")
+	fs.StringVar(&args.WYUTestServer, "wyuserver", "", "WYU Server")
 
 	err = fs.Parse(normalizedArgs)
 	if err != nil {

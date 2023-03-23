@@ -2,6 +2,7 @@ package updater
 
 import (
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -33,10 +34,23 @@ func (fakeier FakeUpdateInfo) ParseWYC(wycFile string) (iuc ConfigIUC, err error
 	return iuc, err
 }
 
-func (fakeier FakeUpdateInfo) ParseWYS(wysFile string, args Args) (wys ConfigWYS, err error) {
+func (fakeier FakeUpdateInfo) ParseWYSFromFilePath(wysFile string, args Args) (wys ConfigWYS, err error) {
 	info := Info{}
 
-	wys, err = info.ParseWYS(wysFile, args)
+	wys, err = info.ParseWYSFromFilePath(wysFile, args)
+
+	if fakeier.ModifyWYS {
+		wys.FileSha1 = fakeier.ConfigWYS.FileSha1
+		wys.UpdateFileAdler32 = fakeier.ConfigWYS.UpdateFileAdler32
+	}
+
+	return wys, err
+}
+
+func (fakeier FakeUpdateInfo) ParseWYSFromReader(reader io.ReaderAt, size int64) (wys ConfigWYS, err error) {
+	info := Info{}
+
+	wys, err = info.ParseWYSFromReader(reader, size)
 
 	if fakeier.ModifyWYS {
 		wys.FileSha1 = fakeier.ConfigWYS.FileSha1
@@ -88,7 +102,7 @@ func TestHandler_UpdateHandler_InvalidWYC(t *testing.T) {
 
 	var args Args
 	args.Cdata = wycFile
-	args.Server = tsWYS.URL
+	args.WYSTestServer = tsWYS.URL
 	args.WYUTestServer = tsWYU.URL
 	args.Outputinfo = true
 	f := SetupTmpLog()
@@ -131,7 +145,7 @@ func TestHandler_UpdateHandler_download_WYS_error(t *testing.T) {
 
 	var args Args
 	args.Cdata = wycFile
-	args.Server = tsWYS.URL
+	args.WYSTestServer = tsWYS.URL
 	args.WYUTestServer = tsWYU.URL
 
 	finfo := FakeUpdateInfo{}
@@ -169,7 +183,7 @@ func TestHandler_UpdateHandler_invalid_WYS_error(t *testing.T) {
 
 	var args Args
 	args.Cdata = wycFile
-	args.Server = tsWYS.URL
+	args.WYSTestServer = tsWYS.URL
 	args.WYUTestServer = tsWYU.URL
 
 	finfo := FakeUpdateInfo{}
@@ -177,7 +191,7 @@ func TestHandler_UpdateHandler_invalid_WYS_error(t *testing.T) {
 	exitCode, err := UpdateHandler(finfo, args)
 	assert.Equal(t, EXIT_ERROR, exitCode)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "error reading wys file")
+	assert.Contains(t, err.Error(), "error parsing downloaded candidate WYS file")
 }
 
 func TestHandler_UpdateHandler_download_WYU_error(t *testing.T) {
@@ -207,7 +221,7 @@ func TestHandler_UpdateHandler_download_WYU_error(t *testing.T) {
 
 	var args Args
 	args.Cdata = wycFile
-	args.Server = tsWYS.URL
+	args.WYSTestServer = tsWYS.URL
 	args.WYUTestServer = tsWYU.URL
 
 	finfo := FakeUpdateInfo{}
@@ -247,7 +261,7 @@ func TestHandler_UpdateHandler_invalid_WYU_error(t *testing.T) {
 
 	var args Args
 	args.Cdata = wycFile
-	args.Server = tsWYS.URL
+	args.WYSTestServer = tsWYS.URL
 	args.WYUTestServer = tsWYU.URL
 
 	finfo := FakeUpdateInfo{}
@@ -286,7 +300,7 @@ func TestHandler_UpdateHandler_update_not_signed(t *testing.T) {
 
 	var args Args
 	args.Cdata = wycFile
-	args.Server = tsWYS.URL
+	args.WYSTestServer = tsWYS.URL
 	args.WYUTestServer = tsWYU.URL
 
 	finfo := FakeUpdateInfo{}
@@ -327,7 +341,7 @@ func TestHandler_UpdateHandler_signature_verification_error(t *testing.T) {
 
 	var args Args
 	args.Cdata = wycFile
-	args.Server = tsWYS.URL
+	args.WYSTestServer = tsWYS.URL
 	args.WYUTestServer = tsWYU.URL
 
 	finfo := FakeUpdateInfo{}
@@ -368,7 +382,7 @@ func TestHandler_UpdateHandler_checksum_error(t *testing.T) {
 
 	var args Args
 	args.Cdata = wycFile
-	args.Server = tsWYS.URL
+	args.WYSTestServer = tsWYS.URL
 	args.WYUTestServer = tsWYU.URL
 
 	finfo := FakeUpdateInfo{}
@@ -411,7 +425,7 @@ func TestHandler_UpdateHandler_no_updtdetails_file_error(t *testing.T) {
 
 	var args Args
 	args.Cdata = wycFile
-	args.Server = tsWYS.URL
+	args.WYSTestServer = tsWYS.URL
 	args.WYUTestServer = tsWYU.URL
 
 	finfo := FakeUpdateInfo{}
@@ -443,7 +457,7 @@ func TestHandler_CheckForUpdateHandler_no_update(t *testing.T) {
 
 	var args Args
 	args.Cdata = wycFile
-	args.Server = tsWYS.URL
+	args.WYSTestServer = tsWYS.URL
 	args.Outputinfo = true
 	f := SetupTmpLog()
 	args.OutputinfoLog = f.Name()
@@ -472,7 +486,7 @@ func TestHandler_CheckForUpdateHandler_invalid_WYC_file(t *testing.T) {
 
 	var args Args
 	args.Cdata = wycFile
-	args.Server = tsWYS.URL
+	args.WYSTestServer = tsWYS.URL
 	args.Outputinfo = true
 	f := SetupTmpLog()
 	args.OutputinfoLog = f.Name()
@@ -491,7 +505,7 @@ func TestHandler_CheckForUpdateHandler_http_error(t *testing.T) {
 
 	var args Args
 	args.Cdata = wycFile
-	args.Server = "http://foo.bar"
+	args.WYSTestServer = "http://foo.bar"
 	f := SetupTmpLog()
 	args.OutputinfoLog = f.Name()
 	defer TearDown(args.OutputinfoLog)
@@ -517,7 +531,7 @@ func TestHandler_CheckForUpdateHandler_invalid_WYS_file(t *testing.T) {
 
 	var args Args
 	args.Cdata = wycFile
-	args.Server = tsWYS.URL
+	args.WYSTestServer = tsWYS.URL
 	f := SetupTmpLog()
 	args.OutputinfoLog = f.Name()
 	defer TearDown(args.OutputinfoLog)
